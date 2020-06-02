@@ -18,4 +18,5 @@
 (define build-deps '("math-doc"
                      "racket-doc"
                      "scribble-lib"
-                     "scribble-math"))
+                     "scribble-math"
+                     ("flomat-x86_64-linux-natipkg"  #:platform "x86_64-linux-natipkg")))

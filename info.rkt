@@ -21,4 +21,5 @@
 (define pkg-authors '(soegaard))
 (define build-deps '("rackunit-lib"
                      "scribble-lib"
-                     "scribble-math"))
+                     "scribble-math"
+                     ("flomat-x86_64-linux-natipkg"  #:platform "x86_64-linux-natipkg")))

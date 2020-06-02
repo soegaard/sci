@@ -87,7 +87,7 @@
      ; order is important here
      (define cblas-lib    (ffi-lib "libblas"     '("3" #f))) 
      (define gfortran-lib (ffi-lib "libgfortran" '("3" #f)))
-     (define quadmath-lib (ffi-lib "libquadmath" '("3" #f)))
+     (define quadmath-lib (ffi-lib "libquadmath" '("0" #f)))
      (define lapack-lib   (ffi-lib "liblapack"   '("3" #f)))
      (values cblas-lib lapack-lib)]
     [(windows)

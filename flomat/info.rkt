@@ -11,5 +11,8 @@
 
 ;; Dependencies
 
-(define deps       '("base"))
+(define deps       '("base"
+                     ; The shared libraries
+                     ("flomat-x86_64-linux-natipkg"  #:platform "x86_64-linux-natipkg")))
+
 (define build-deps '("rackunit-lib"))

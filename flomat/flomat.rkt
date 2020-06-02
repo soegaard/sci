@@ -7,7 +7,6 @@
 
 ;;; NOTES
 ;;;        * Contracts will be added before release
-;;;
 ;;;        * See tests at bottom for examples.
 
 ;;; FEEDBACK

@@ -22,4 +22,6 @@
 (define build-deps '("rackunit-lib"
                      "scribble-lib"
                      "scribble-math"
+                     "math-doc"
+                     "racket-doc"
                      ("linux-shared-libraries"  #:platform "x86_64-linux-natipkg")))

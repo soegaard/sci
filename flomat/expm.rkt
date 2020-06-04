@@ -230,3 +230,10 @@
 ;; (expm-pade (matrix '([1  0] [0  2])))
 
 ;; (expm-pade (matrix '([1  2] [3  4])))
+
+
+;;; Notes:
+;; Found: The Scaling and Squaring Method for the Matrix Exponential Revisited,
+;         Nicolas J. Higham
+;  TODO: Read it and see if we can improve the algorithm.
+

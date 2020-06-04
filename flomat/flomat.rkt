@@ -106,6 +106,13 @@
 ; LAPACK Naming scheme:
 ; http://www.netlib.org/lapack/lug/node24.html
 
+; On macOS the header files are here:
+
+; /Library/Developer/CommandLineTools/SDKs/MacOSX10.14.sdk/System/Library/
+; Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/
+; Versions/A/Headers/clapack.h
+
+
 ;;;
 ;;; CONFIGURATION
 ;;;
@@ -1226,7 +1233,7 @@
   (_fun (n : _int) (X : _flomat) (incX : _int)
         -> _x))
 
-(define (flomat-norm A)
+#;(define (flomat-norm A)
   ; (sqrt (sum (sqr A_ij)))
   (define-param (m n a lda) A)
   (cond
@@ -1238,6 +1245,43 @@
      (sqrt
       (for/sum ([j (in-range n)])
         (expt (cblas_dnrm2 m (ptr-col a lda j) 1) 2)))]))
+
+(define-lapack dlange_
+  (_fun (norm : (_ptr i _byte)) ; char M, 1, I, F
+        (m    : (_ptr i _int))
+        (n    : (_ptr i _int))
+        (a    : _flomat) 
+        (lda  : (_ptr i _int))
+        (work : (_ptr io _flomat)) ; used only if norm is #\M
+        -> _double))
+
+(define (flomat-norm A [norm-type 2])
+  (define-param (m n a lda) A)
+  (define norm (char->integer 
+                (match norm-type
+                  [1         #\1]
+                  ['inf      #\I]
+                  [2         #\F]
+                  ['max-abs  #\M]
+                  [_ (error)])))
+  (define lwork (if (equal? norm-type 'inf) (max 1 m) 1))
+  (define W (make-flomat lwork 1))
+  (define w (flomat-a W))
+  (dlange_ norm m n a lda w))
+
+
+(define (flomat-norm1 A) ; maximum column sum (absolute values)
+  (flomat-norm A 1))
+
+(define (flomat-norm-inf A) ; maximum row sum (absolute values)
+  (flomat-norm A 'inf))
+
+(define (flomat-norm-frob A) ; Frobenius (sqrt of sum of squares)
+  (flomat-norm A 2))
+
+(define (flomat-norm-max-abs A) ; not real norm
+  (flomat-norm A 'max-abs))
+
 
 ;;; 
 ;;; UNARY MATRIX OPERATIONS
@@ -1943,6 +1987,55 @@
    v (flgram-schmidt-orthogonal ws)))
 
 ;;;
+;;; SUMS
+;;;
+
+
+(define unsafe-sum
+  ;; (unsafe-sum n a lda)
+  ;  Beginning from addrees a, sum every lda element in double array.
+  ;
+  ; There is no `sum` operation in BLAS or LAPCK, so we compute the dot product
+  ; between the vector and a vector consisting only of ones.
+  ; Also we don't need to allocate a vector with only ones, we simply use ld=0.  
+  (let ()
+    (define one (cast (f64vector->cpointer (f64vector 1.0)) _pointer _flomat))
+    (λ (n a lda)
+      (cblas_ddot n a lda one 0))))
+
+(define (flomat-column-sum A j)
+  ; sum of all entries in column j
+  (define who 'flomat-column-sum)
+  (check-flomat who A)
+  (check-legal-column who j A)  
+  (define-param (m n a lda) A)  
+  (define aj (ptr-elm a lda 0 j)) ; address of j'th column
+  (unsafe-sum m aj 1))
+
+(define (flomat-row-sum A i)
+  ; sum of all entries in row i
+  (define who 'flomat-row-sum)
+  (check-flomat who A)
+  (check-legal-row who i A)  
+  (define-param (m n a lda) A)  
+  (define ai (ptr-elm a lda i 0))
+  (unsafe-sum n ai lda))
+
+(define (flomat-column-sums A)
+  ; row vector of all column sums
+  (check-flomat 'flomat-column-sums A)
+  (define n (ncols A))
+  (for/flomat 1 n ([j (in-range n)])
+              (flomat-column-sum A j)))
+
+(define (flomat-row-sums A)
+  ; column vector of all row sums
+  (check-flomat 'flomat-row-sums A)
+  (define m (nrows A))
+  (for/flomat m 1 ([i (in-range m)])
+    (flomat-row-sum A i)))
+
+;;;
 ;;; EQUATION SOLVING
 ;;;
 
@@ -1975,7 +2068,7 @@
   (define-param (m n a lda) A)
   (define-param (_ nrhs b ldb) B)
   (define info (dgesv_ n nrhs a lda b ldb))
-  (displayln (list 'flomat-solve-many! info))
+  ; (displayln (list 'flomat-solve-many! info))
   ; ? TODO: handle info
   (values B))
 
@@ -3011,8 +3104,8 @@
     (flomat-eigenvalues-and-vectors! A #:right #f #:overwrite #f))
   (real+imaginary->vector WR WI))
 
-(define (norm A)
-  (flomat-norm A))
+(define (norm A [type 2])
+  (flomat-norm A 2))
 
 (define (det A)
   (flomat-determinant A))
@@ -3043,6 +3136,12 @@
 
 (define (eye m [n m] [k 0])
   (flomat-eye m n k))
+
+(define rowsum  flomat-row-sum)
+(define rowsums flomat-row-sums)
+(define colsum  flomat-column-sum)
+(define colsums flomat-column-sums)
+(define (summ A) (rowsum (colsums A) 0))
 
 ;;;
 ;;; TEST

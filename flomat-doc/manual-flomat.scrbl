@@ -1,7 +1,7 @@
 #lang scribble/manual
 @(require (for-label racket/base ffi/vector ffi/unsafe))
 
-@; raco scribble +m --dest html --redirect-main http://docs.racket-lang.org flomat.scrbl && open html/flomat.html
+@; raco scribble +m --dest html --redirect-main http://docs.racket-lang.org manual-flomat.scrbl && open html/manual-flomat.html
 @(require scribble/example scribble-math )
 @(require racket/format)
 
@@ -98,7 +98,7 @@ only describes level 1 and level 2 operations.
 
 @section{Quick Tutorial}
 
-@(define quick-eval (let ([e (make-base-eval)]) (e '(require flomat/flomat)) e))
+@(define quick-eval (let ([e (make-base-eval)]) (e '(require flomat/main)) e))
 
 This section shows how to do simple matrix computations.
 The beginning part of the tutorial describes working with matrices simply as arrays
@@ -791,6 +791,17 @@ second contains just ones.
                 X
                 (define B  (lstsq X ys))
                 B]
+
+@subsection{Matrix Functions}
+@bold[@racket[(expm A)]] @linebreak[]
+Compute the matrix exponential @${\exp(A)}.
+
+@examples[#:label #f #:eval quick-eval
+          (list (exp 1) (exp 2))
+          (expm (matrix '((1 0) (0 2))))
+          (expm (matrix '((1 2) (3 4))))]
+
+
 
 @section{Installation}
 

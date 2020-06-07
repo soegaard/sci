@@ -162,6 +162,7 @@
 
 
 (define (flomat= A B [eps #f])
+  ; TODO: Use (< (norm1 (.- A B)) eps)
   (define-param (m n a lda) A)
   (define-param (r c b ldb) B)
   (and (= m r) (= n c)

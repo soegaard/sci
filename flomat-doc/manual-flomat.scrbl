@@ -1,5 +1,5 @@
 #lang scribble/manual
-@(require (for-label racket/base ffi/vector ffi/unsafe))
+@(require (for-label racket/base ffi/vector ffi/unsafe flomat))
 
 @; raco scribble +m --dest html --redirect-main http://docs.racket-lang.org manual-flomat.scrbl && open html/manual-flomat.html
 @(require scribble/example scribble-math )
@@ -98,7 +98,7 @@ only describes level 1 and level 2 operations.
 
 @section{Quick Tutorial}
 
-@(define quick-eval (let ([e (make-base-eval)]) (e '(require flomat/main)) e))
+@(define quick-eval (let ([e (make-base-eval)]) (e '(require flomat)) e))
 
 This section shows how to do simple matrix computations.
 The beginning part of the tutorial describes working with matrices simply as arrays
@@ -828,6 +828,133 @@ out @racket[libblas] is exporting the names used by CBLAS, so
 On Windows: A tester is needed. Install CBLAS and LAPACK and let
 me know if it works. Otherwise make an Issue at Github and we
 will add the proper paths.
+
+
+@section{Reference}
+
+
+@subsection{Representation}
+
+@(define (wikipedia name . preflow)
+   (define url (string-append "https://en.wikipedia.org/wiki/" name))
+   @margin-note{@hyperlink[url (list* @bold{Wikipedia: } " " preflow)]})
+
+@wikipedia["Row-_and_column-major_order"]{Column Major Order}
+An @mxn matrix is consist conceptually of @mxn floating points
+arranged in @m rows and @n columns. Concretely the floating point
+numbers are stored in an one-dimentional array in @emph{column major order}.
+This means that the entries in each column are stored together in the array.
+
+Given the address of an entry the
+@deftech["leading dimension" #:key "leading dimension"] @racket[ld]
+is the amount to add to get the address of the next entry in the same row.
+
+For matrices with no gaps between columns in the array, the leading dimension
+and the number of rows is the same @racket[ld=m].
+
+For matrices with gaps between columns in the array, the leading dimension
+might be larger than the number of rows @racket[ld>m].
+
+Allowing gaps in the array allows submatrices of a larger matrix
+to share the underlying array.
+
+As an example, let's look at an @${2\times 3} matrix with leading dimension 5.
+
+@$${A = 
+    \begin{bmatrix}
+     a_{00}   & a_{01}  &  a_{02}   \\ 
+     a_{10}   & a_{11}  &  a_{12}   
+     \end{bmatrix}}
+
+The underlying array is:
+
+@$${[\underbrace{\overbrace{a_{00},a_{10}}^{\text{first  column}},?,?}_{\text{ld}=5},
+     \underbrace{\overbrace{a_{01},a_{11}}^{\text{second column}},?,?}_{\text{ld}=5},
+     \underbrace{\overbrace{a_{02},a_{12}}^{\text{third  column}},?,?}_{\text{ld}=5}]}
+
+Notice that the length of the underlying array is @${m\cdot\text{ld}=2\cdot 5=15}.
+
+The main takeaway is that:
+
+@itemlist[#:style 'ordered
+  @item{A matrix has an underlying array.}
+  @item{The entries in a column is stored together.}
+  @item{The underlying array can be shared between matrices.}
+  @item{There can be gaps between columns in the array.}]
+
+The exact details of leading dimensions is mostly relevant if you need to
+call BLAS or LAPACK functions directly.
+
+
+@defthing[_flomat ctype?]
+Pointer to an array of flonums.
+
+@(defstruct flomat ([m natural?] [n natural?] [a _flomat] [lda natural?]) #:omit-constructor)
+Strucure representing an @mxn matrix with leading dimension @racket[lda]
+with an underlying array of floating points stored in @racket[a].
+
+@defform*[[(define-param (m n)       A)
+           (define-param (m n a)     A)
+           (define-param (m n a lda) A)]]
+Equivalent to @(linebreak)
+    @racket[(match-define (flomat m n _ _)   A)] @(linebreak)
+    @racket[(match-define (flomat m n a _)   A)] @(linebreak) 
+    @racket[(match-define (flomat m n a lda) A)] @(linebreak)
+respectively.
+
+@defform[(index lda i j)]
+Expands to @racket[(+ i (* j lda))] which is the array index
+of the entry on row @i, column @${j}.
+
+@defproc[(ptr-elm [a _flomat] [lda natural?] [i natural?] [j natural?]) _flomat]
+Computes the address of the entry on row @i, column @${j}.
+
+@defproc[(ptr-row [a _flomat] [i natural?]) _flomat]
+Computes the adress of the beginning of row @${i}.
+
+@defproc[(ptr-col [a _flomat] [lda natural?] [j natural?]) _flomat]
+Computes the adress of the beginning of column @${j}.
+Note that the leading dimenstion @racket[lda] is needed.
+
+
+@defproc[(alloc-flomat [m natural?] [n natural?]) _flomat]
+Allocate a floating point array with @${mn} elements and
+return a tagged pointer to the array.
+
+@defproc[(alloc-same-size-matrix [A flomat?]) _flomat]
+Like @racket[alloc-flomat] but use the  dimensions @mxn
+of @racket[A] to determine the size.
+
+@subsection{Printing}
+
+@defproc[(flomat-print [A flomat?] [port port?] [mode boolean?]) void?]
+Prints a flomat @racket[A] to the port @racket[port].
+If the mode @racket[#t] means @emph{write} and
+@racket[#f] means @emph{display}.
+
+If the size of the matrix @racket[A] is less than the
+value of the parameter @racket[current-max-flomat-print-size] the
+entries are printed, otherwise an ellisis "..." is printed.
+
+Currently there the output of @emph{write} and @emph{display} mode is the same.
+
+@examples[#:label #f
+          #:eval quick-eval
+          (define A (matrix '[[1 2]]))
+          (flomat-print A (current-output-port) #f)
+          (display A)
+          (flomat-print A (current-output-port) #t)
+          (write A)]
+
+@defparam[current-max-flomat-print-size n natural?]
+Parameter that controls printing whether the entries of the matrix
+are printed. See @racket[flomat-print].
+
+
+
+
+
+
 
 
 

@@ -925,6 +925,78 @@ return a tagged pointer to the array.
 Like @racket[alloc-flomat] but use the  dimensions @mxn
 of @racket[A] to determine the size.
 
+@subsection{Copying}
+
+@defproc[(copy-flomat [A flomat?]) flomat?]
+Return a newly allocated @racket[flomat] struct with a newly 
+allocated backing array of flonums. If racket[A] has dimensions
+@mxn then the newly allocated array will have length @${m\cdot n}.
+The backing array of the copy can therefore be shorter than the original
+backing array.
+
+
+@defproc[(unsafe-vector-copy! [s natural?] [a _flomat] [lda natural?] [b natural?]) void?]
+Copies @racket[s] elements from @racket[A] into @racket[B].
+The elements copied has indices: @${0}, @${\text{lda}}, @${2\text{lda}} @${\ldots} .
+No error checking is done.
+
+Note that @racket[unsafe-vector-copy!] can be used to copy a column or a row
+depending on the leading dimension used.
+
+@defproc[(unsafe-matrix-copy! [m natural?] [n natural?] [a _flomat] [lda natural?] [b _flomat] [ldb natural?]) void?]
+Copies the @mxn matrix @racket[A] into @racket[B].
+
+If you need to copy @racket[A] into an index other than @${(0,0)} use
+@racket[(ptr-elm b ldb i j)] to find the addres of the submatrix of @racket[B]
+which has upper left corner in @${(i,j)}.
+
+In the same manner you can use @racket[(ptr-elm a lda i j)] to find 
+start of an submatrix in @racket[A].
+
+@subsection{Simple Constructors}
+
+@defproc[(make-flomat [m natural?] [n natural?] [x natural? 0.0]) flomat?]
+Returns a flomat of dimension @mxn with an backing array of size @${mn}.
+All entires are initialized to contain @racket[x].
+@examples[#:label #f #:eval quick-eval (make-flomat 2 3 4)]
+
+@defproc[(list->flomat [xss list-of-list-of-number]) flomat]
+Given a matrix represented as list of rows (where a row is a list of numbers),
+return a new matrix with the same entries.
+Note: @racket[matrix] is usually simpler to use
+@examples[#:label #f #:eval quick-eval (list->flomat '((1 2) (3 4)))]
+
+@defproc[(vectors->flomat [xss vector-of-vector-of-number]) flomat]
+Given a matrix represented as vector of rows (where a row is a vector of numbers),
+return a new matrix with the same entries.
+Note: @racket[matrix] is usually simpler to use
+@examples[#:label #f #:eval quick-eval (vectors->flomat '#(#(1 2) #(3 4)))]
+
+@defproc[(flomat->vectors [A flomat]) vector?]
+Given a flomat @racket[A] return a matrix with the same entries represented
+as vector of rows (where a row is a vector of numbers).
+@examples[#:label #f #:eval quick-eval (flomat->vectors (matrix '[[1 2] [3 4]]))]
+
+@defproc[(vector->flomat [m natural?] [n natural?] [v vector?]) flomat]
+Given a vector @racket[v] of length @${mn} representing a matrix with
+entries in row major order, return a matrix with the same dimensions
+and entries represented as a @racket[flomat].
+@examples[#:label #f #:eval quick-eval (vector->flomat 2 3 (vector 1 2 3 4 5 6))]
+
+@defproc[(flomat->vector [A flomat]) vector?]
+Return a vector of all entries in @racket[A] in row-major order.
+@examples[#:label #f #:eval quick-eval (flomat->vector (matrix '[[1 2] [3 4]]))]
+
+@defproc[(flomat/dim [m natural?] [n natural?] [xs list-of-numbers]) flomat?]
+Construct a @racket[flomat?] matrix with entries from @racket[xs].
+The numbers in @racket[xs] are expected to be in row major order.
+@examples[#:label #f #:eval quick-eval (flomat/dim 2 3   1 2 3 4 5 6)]
+
+
+
+
+
+
 @subsection{Printing}
 
 @defproc[(flomat-print [A flomat?] [port port?] [mode boolean?]) void?]
@@ -949,7 +1021,6 @@ Currently there the output of @emph{write} and @emph{display} mode is the same.
 @defparam[current-max-flomat-print-size n natural?]
 Parameter that controls printing whether the entries of the matrix
 are printed. See @racket[flomat-print].
-
 
 
 

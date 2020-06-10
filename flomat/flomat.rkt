@@ -4,6 +4,9 @@
 ;;; TODO
 ;;;        * Implement block. Handle mix between numbers and matrices.
 ;;;        * Improve matrix-expt! (avoid allocation)
+;;;        * schur decomposition
+;;;        * sqrtm See Higham paper.
+;;;        * logm
 
 ;;; NOTES
 ;;;        * Contracts will be added before release
@@ -19,7 +22,7 @@
 
 ;;;
 ;;; PLATFORMS TESTED       
-;;;        * OS X Mountain Lion (Working)
+;;;        * OS X Catalina (Working)
 
 ;;;
 ;;; IDEAS
@@ -393,8 +396,11 @@
 (define (alloc-flomat m n)
   (if (or (= m 0) (= n 0))
       #f ; ~ NULL
-      (cast (malloc (* m n) _double 'atomic-interior)
+      (cast (malloc (* m n) _double 'atomic)
             _pointer _flomat)))
+
+; Note: Even though we use ptr-add we do not need to use 'atomic-interior
+;       since the result of ptr-add contains both the base pointer and an offset.
 
 (define (alloc-same-size-matrix A)
   (define-param (m n) A)
@@ -428,7 +434,12 @@
                (let ([_x _c]) body ...))
              ...)))]))
 
-(define-cblas* cblas_xcopy _x (s d c z)
+;; Note: BLAS expects complex numbers to be passed as two doubles,
+;        so _complex aren't per se missing from the FFI.
+;   https://stackoverflow.com/questions/34103818/swift-blas-cblas-cgemv-complex-numbers
+;  For now this library sticks with doubles.
+
+(define-cblas* cblas_xcopy _x (s d c z)  ; dcopy
   ; copy n elements from vector X to vector Y
   (_fun (n : _int)  
         (X : _flomat) (incX : _int)
@@ -448,6 +459,10 @@
   (cblas_dcopy s a lda b 1))
 
 (define (unsafe-matrix-copy! m n a lda b ldb)
+  ; Todo: The for loop currently copies each column.
+  ;       If the rows are longer than columns then it would be
+  ;       faster to copy each row.
+  
   ; copy the mxn matrix A into B
   ; copy has upper left corner in (i,j)
   ; Note: use (ptr-elm b ldb i j) to
@@ -470,21 +485,30 @@
      (unsafe-matrix-copy! m n a lda b ldb)])
   (flomat m n b ldb))
 
+
+;; (define (make-flomat m n [x 0.0])
+;;   (define a (alloc-flomat m n))
+;;   (define x* (real->double-flonum x))
+;;   (if (= x 0.0)
+;;       (memset a 0 (* m n) _double)
+;;       (for ([i (* m n)]) (ptr-set! a _double i x*)))
+;;   (flomat m n a m))
+
 (define (make-flomat m n [x 0.0])
-  (define a (alloc-flomat m n))
-  (define x* (real->double-flonum x))
+  (define a  (alloc-flomat m n))
+  (define x* (cast (malloc 1 _double 'atomic) _pointer _flomat))
+  (ptr-set! x* _double (real->double-flonum x))
   (if (= x 0.0)
-      (memset a 0 (* m n) _double)
-      (for ([i (* m n)]) (ptr-set! a _double i x*)))
+      (memset a 0  (* m n) _double)
+      (cblas_dcopy (* m n) x* 0 a 1))
   (flomat m n a m))
+
 
 (define (flomat-zeros m n)
   (make-flomat m n 0.0))
 
 (define (flomat-ones m n)
   (make-flomat m n 1.0))
-
-
 
 
 (define (list->flomat xss)
@@ -1509,20 +1533,20 @@
   ; A = U * SIGMA * transpose(V)
   ; SIGMA is an mxn matrix, 
   ; Algorith: QR used
-  (_fun (jobu : (_ptr i _byte))  ; char: a, s, o or n
+  (_fun (jobu  : (_ptr i _byte)) ; char: a, s, o or n
         (jobvt : (_ptr i _byte)) ; char
-        (m : (_ptr i _int)) ; rows in A
-        (n : (_ptr i _int)) ; cols in A
-        (a : _flomat) ; io
-        (lda : (_ptr i _int))
-        (s : _flomat) ; min(m,n) x 1
-        (u : _flomat) ; mxm if jobu = a
-        (ldu : (_ptr i _int)) 
-        (vt : _flomat) ; nxn if jobvt = a
-        (ldvt : (_ptr i _int)) ;         
-        (work : _flomat) ; dim max(1,lwork)
-        (lwork : (_ptr i _int)) ; 
-        (info : (_ptr o _int))
+        (m     : (_ptr i _int))  ; rows in A
+        (n     : (_ptr i _int))  ; cols in A
+        (a     :  _flomat)       ; io
+        (lda   : (_ptr i _int))
+        (s     :  _flomat)       ; min(m,n) x 1
+        (u     :  _flomat)       ; mxm if jobu = a
+        (ldu   : (_ptr i _int)) 
+        (vt    :  _flomat)       ; nxn if jobvt = a
+        (ldvt  : (_ptr i _int))  ;         
+        (work  :  _flomat)       ; dim max(1,lwork)
+        (lwork : (_ptr i _int))  ; 
+        (info  : (_ptr o _int))
         -> _void
         -> info))
 
@@ -1533,20 +1557,20 @@
   ; Algorithm: Divide and conquer with QR used for small
   ; This is the recommended algorithm, but uses
   ; more work space.
-  (_fun (jobu : (_ptr i _byte)) ; char: a, s, o or n
+  (_fun (jobu  : (_ptr i _byte)) ; char: a, s, o or n
         (jobvt : (_ptr i _byte))
-        (m : (_ptr i _int)) ; rows in A
-        (n : (_ptr i _int)) ; cols in A
-        (a : _flomat) ; io
-        (lda : (_ptr i _int))
-        (s : _flomat) ; min(m,n) x 1
-        (u : _flomat) ; mxm if jobu = a
-        (ldu : (_ptr i _int)) 
-        (vt : _flomat) ; nxn if jobvt = a
-        (ldvt : (_ptr i _int)) ;         
-        (work : _flomat) ; dim max(1,lwork)
-        (lwork : (_ptr i _int)) ; 
-        (info : (_ptr o _int))
+        (m     : (_ptr i _int))  ; rows in A
+        (n     : (_ptr i _int))  ; cols in A
+        (a     :  _flomat)       ; io
+        (lda   : (_ptr i _int))
+        (s     :  _flomat)       ; min(m,n) x 1
+        (u     :  _flomat)       ; mxm if jobu = a
+        (ldu   : (_ptr i _int)) 
+        (vt    :  _flomat)       ; nxn if jobvt = a
+        (ldvt  : (_ptr i _int))  ;         
+        (work  :  _flomat)       ; dim max(1,lwork)
+        (lwork : (_ptr i _int))   
+        (info  : (_ptr o _int))
         -> _void
         -> info))
 
@@ -1615,14 +1639,14 @@
 (define-lapack dgeqrf_
   ; Compute A = Q*R  
   ; Use dorgqr to generate matrix from output
-  (_fun (m : (_ptr i _int)) ; rows in A
-        (n : (_ptr i _int)) ; cols in A
-        (a : _flomat) ; io
-        (lda : (_ptr i _int))
-        (tau : _flomat) ; min(m,n)x1        
-        (work : _flomat) ; dim max(1,lwork) (x1)
-        (lwork : (_ptr i _int)) ; >=max(1,n) best with >=n * blocksize
-        (info : (_ptr o _int))  ; 
+  (_fun (m     : (_ptr i _int))  ; rows in A
+        (n     : (_ptr i _int))  ; cols in A
+        (a     :  _flomat)       ; io
+        (lda   : (_ptr i _int))
+        (tau   :  _flomat)       ; min(m,n)x1        
+        (work  :  _flomat)       ; dim max(1,lwork) (x1)
+        (lwork : (_ptr i _int))  ; >=max(1,n) best with >=n * blocksize
+        (info  : (_ptr o _int))   
         -> _void
         -> info))
 
@@ -1688,13 +1712,13 @@
   ; computed by DGETRF.
   ; This method inverts U and then computes inv(A) by solving the system
   ;   inv(A)*L = inv(U) for inv(A).
-  (_fun (n : (_ptr i _int))
-        (a : _flomat)
-        (lda : (_ptr i _int))
-        (ipiv : _u32vector)
-        (work : (_or-null _flomat)) ; output
+  (_fun (n     : (_ptr i _int))
+        (a     :  _flomat)
+        (lda   : (_ptr i _int))
+        (ipiv  :  _u32vector)
+        (work  : (_or-null _flomat)) ; output
         (lwork : (_ptr i _int))
-        (info : (_ptr o _int))
+        (info  : (_ptr o _int))
         -> _void
         -> (values info work)))
 
@@ -1728,10 +1752,10 @@
   ;  positive definite matrix A.
   ;
   ;  The factorization has the form
-  ;     A = U**T * U,  if UPLO = 'U', or
-  ;     A = L  * L**T,  if UPLO = 'L',
+  ;     A = U^T * U     if UPLO = 'U', or
+  ;     A = L   * L^T   if UPLO = 'L',
   ;  where U is an upper triangular matrix and L is lower triangular.
-  (_fun (uplo : (_ptr i _byte))          ; 'U' or 'L'
+  (_fun (uplo : (_ptr i _byte))  ; 'U' or 'L'
         (n    : (_ptr i _int))
         (a    : _flomat)
         (lda  : (_ptr i _int))
@@ -1739,8 +1763,8 @@
         -> _void
         -> info))
 
-(define ascii-U 85)
-(define ascii-L 76)
+(define ascii-U (char->integer #\U))
+(define ascii-L (char->integer #\L))
 
 (define (flomat-cholesky! A [upper? #f])
   (check-square flomat-cholesky! A)

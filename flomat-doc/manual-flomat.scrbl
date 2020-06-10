@@ -42,11 +42,22 @@
 @(define x   @${x})
 @(define y   @${y})
 
-@(define ith (list @${i} "'th"))
-@(define jth (list @${j} "'th"))
-@(define kth (list @${k} "'th"))
-@(define mth (list @${m} "'th"))
-@(define nth (list @${n} "'th"))
+@(define ith  (list @${i} "'th"))
+@(define jth  (list @${j} "'th"))
+@(define kth  (list @${k} "'th"))
+@(define mth  (list @${m} "'th"))
+@(define nth  (list @${n} "'th"))
+@(define ijth (list @${(i,j)} "'th"))
+
+@; Long urls
+@(define url-apple-blas-docs   "https://developer.apple.com/documentation/accelerate/blas?language=objc")
+@(define url-dcopy-docs        "http://www.netlib.org/lapack/explore-html/de/da4/group__double__blas__level1_ga21cdaae1732dea58194c279fca30126d.html")
+
+@(define (cblas-docs name . preflow)
+   (define url (string-append "https://en.wikipedia.org/wiki/" name))
+   @margin-note{@hyperlink[url (list* @bold{Wikipedia: } " " preflow)]})
+
+
 
 @; Note: Without `with-html5` MathJax isn't loaded.
 @title[#:tag "flomat" #:style (with-html5 manual-doc-style)]{Flomat: Floating Point Matrices}
@@ -57,7 +68,7 @@ This manual documents the matrix library @racketmodname[flomat].
 
 @author[@author+email["Jens Axel Søgaard" "jensaxel@soegaard.net"]]
 
-@local-table-of-contents[#:style 'immediate-only]
+@local-table-of-contents[]
 
 @section{Introduction}
 
@@ -993,7 +1004,74 @@ The numbers in @racket[xs] are expected to be in row major order.
 @examples[#:label #f #:eval quick-eval (flomat/dim 2 3   1 2 3 4 5 6)]
 
 
+@subsection[#:tag "ref:elementwise-operations"]{Elementwise Operations}
 
+Elementwise operations (also called @emph{pointwise} operations) work on each element.
+The operations all have names that being with a point.
+
+If a function @${f} is unary, then the corresponding pointwise function @${.f} satisfies:
+
+@$${.f( \begin{bmatrix} a_{ij} \end{bmatrix})
+      = \begin{bmatrix} f(a_{ij}) \end{bmatrix}}
+
+If a function @${f} is binary, then the corresponding pointwise function @${.f} satisfies:
+
+@$${.f( \begin{bmatrix} a_{ij} \end{bmatrix},
+       \begin{bmatrix} b_{ij} \end{bmatrix})
+     = \begin{bmatrix} f(a_{ij},b_{ij}) \end{bmatrix}}
+
+A few functions are such as @racket[.-] and @racket[./] can be used both
+as unary and binary functions.
+
+@defproc*[([(.-    [A flomat?]) flomat?]
+           [(./    [A flomat?]) flomat?]
+           [(.sin  [A flomat?]) flomat?]
+           [(.cos  [A flomat?]) flomat?]
+           [(.tan  [A flomat?]) flomat?]
+           [(.exp  [A flomat?]) flomat?]
+           [(.log  [A flomat?]) flomat?]
+           [(.sqr  [A flomat?]) flomat?]
+           [(.sqrt [A flomat?]) flomat?]
+
+           [(.+    [A flomat?] [B flomat?]) flomat?]
+           [(.-    [A flomat?] [B flomat?]) flomat?]
+           [(.*    [A flomat?] [B flomat?]) flomat?]
+           [(./    [A flomat?] [B flomat?]) flomat?]
+           [(.expt [A flomat?] [B flomat?]) flomat?])]
+The builtin unary and pointwise functions. They all allocate a new @racket[flomat].
+
+@defproc*[([(.-!    [A flomat?]) flomat?]
+           [(./!    [A flomat?]) flomat?]
+           [(.sin!  [A flomat?]) flomat?]
+           [(.cos!  [A flomat?]) flomat?]
+           [(.tan!  [A flomat?]) flomat?]
+           [(.exp!  [A flomat?]) flomat?]
+           [(.log!  [A flomat?]) flomat?]
+           [(.sqr!  [A flomat?]) flomat?]
+           [(.sqrt! [A flomat?]) flomat?]
+
+           [(.+!    [A flomat?] [B flomat?]) flomat?]
+           [(.-!    [A flomat?] [B flomat?]) flomat?]
+           [(.*!    [A flomat?] [B flomat?]) flomat?]
+           [(./!    [A flomat?] [B flomat?]) flomat?]
+           [(.expt! [A flomat?] [B flomat?]) flomat?])]
+The function @racket[.f!] works like @racket[.f] expect no new backing array is allocated.
+The underlying flonum array of @racket[A] is overwritten.
+
+@defform[(define-pointwise-unary f)]
+Define unary pointwise functions @racket[.f] and @racket[.f!] which applies the
+function bound to the identifier @racket[f].
+
+@defform[(define-pointwise-binary f)]
+Define binary pointwise functions @racket[.f] and @racket[.f!] which applies the
+function bound to the identifier @racket[f].
+
+@defform[(ddefine-pointwise-unary/binary f)]
+Define unary/binary pointwise functions @racket[.f] and @racket[.f!] which applies the
+function bound to the identifier @racket[f].
+
+
+         
 
 
 
@@ -1023,9 +1101,223 @@ Parameter that controls printing whether the entries of the matrix
 are printed. See @racket[flomat-print].
 
 
+@subsection{BLAS and LAPACK}
+
+@wikipedia["Basic_Linear_Algebra_Subprograms"]{BLAS}
+BLAS (Basic Linear Algebra Subprograms) is a standard containing descriptions
+of a set of commonly used low-level linear algebra routines. The idea
+of having a standard set of operations originated with a Fortran library in 1977.
+Over time the standard has been implemented multiple times and
+there are often fast versions for particular machines available. If possible
+choose an implementation tuned for you hardware.
+
+Where BLAS deals with low-level operations (simple vector and matrix
+computations) LAPACK (Linear Algebra Package) deals with higher-level problems
+such as solving linear equations, solving linear least square problems, 
+and finding matrix decompostions). LAPACK was originally written in Fortran 77
+but current versions are written in Fortran 90. LAPACK is built on top of BLAS
+in the sense that LAPACK calls BLAS to perform the low-level operations.
+
+The philosophy of the @racket[flomat] implementation is to use BLAS and LAPACK
+to solve as many problems as possible (opposed to implement the algorithm
+ourselves). The representation of a @racket[flomat] therefore matches the
+expectation of the routines in BLAS and LAPACK closely.
 
 
+@subsection{CBLAS Bindings}
+
+We have chosen to use CBLAS which provides a C interface (instead of a Fortran one)
+to the routines in BLAS. Apple provides documentation for their implementation:
+@hyperlink[url-apple-blas-docs]{CBLAS Documentation}.
+
+All names in CBLAS has the prefix @racket[cblas_], so if you an operation
+in the Fortran documentation, simply put @racket[cblas_] in front.
+
+There are quite a few operations in BLAS and they all have short names,
+so the names follow a pattern: the first letter describes the type
+of floating point.
+
+@itemlist[
+  @item{s - single precision}
+  @item{d - double precision}
+  @item{c - single precision complex} 
+  @item{z - double precision complex}]
+
+In @racket[flomat] we have for now chosen to stick with matrices containing double
+precision floating points, so we need the operations that begin with @tt{d}.
+
+As an example let's consider how to use @racket[dcopy], which copies
+a vector @racket[X] to a vector @racket[y]. The first step is to
+lookup the arguments. The header file for cblas contains
+is @hyperlink["http://www.netlib.org/blas/cblas.h"]{"cblas.h"} and contains:
+
+@verbatim{
+void cblas_dcopy(const int N,
+                 const double *X, const int incX,
+                       double *Y, const int incY); }
+
+We can ignore @tt{const}, which simplify informs the C compiler that a
+call to @tt{cblas_copy} doesn't change the argument.
+
+For @tt{double *} which is a pointer to an array of doubles, we use
+a tagged pointer @racket[_flomat].
+
+This leads to the following binding:
+
+@codeblock|{(define-cblas cblas_dcopy
+             (_fun (n : _int)  
+                   (X : _flomat) (incX : _int)
+                   (Y : _flomat) (incY : _int)
+                   -> _void))}|
+
+In order to use @racket[cblas_dcopy] we need to study the documentation,
+which is found at Netlink: @hyperlink[url-dcopy-docs]{dcopy}.
+
+@verbatim{
+Purpose:
+    DCOPY copies a vector, x, to a vector, y.
+    uses unrolled loops for increments equal to 1.
+Parameters
+  [in]  N    is INTEGER                 the number of elements in input vector(s)
+  [in]  DX   is DOUBLE PRECISION array  dimension (1+(N-1)*abs(INCX))
+  [in]  INCX is INTEGER,                storage spacing between elements of DX
+  [out] DY   is DOUBLE PRECISION array  dimension (1+(N-1)*abs(INCY))
+  [in]  INCY is INTEGER                 storage spacing between elements of DY}
+
+For vectors we see that a vector is a passed as a pair (DX, INCX) of the
+start address and the stride. Since vectors in @racket[flomat] are column vectors
+and matrices are stored in column major order, the elements of a column vector
+are stored with an increment of 1.
+
+Given two matrices @A and @B we can copy the first @n
+elements of the first column of @A into the first column of @B
+like this:
+@codeblock|{(define-param (ma na a lda) A)
+            (define-param (mb nb b ldb) B)
+            (cblas_dcopy n (ptr-elm a lda 0 j) 1 (ptr-elm b ldb 0 k) 1)}|
+Here @racket[(ptr-elm a lda i j)] will compute the address of the @ijth
+element of matrix @${A}. No error checking is done, so you need to
+check that @n is smaller than then number of rows in @A and @B before
+making the call.
+
+To copy into a row, use @${\text{INCY}=\text{ldb}}.
+@codeblock|{(define-param (ma na a lda) A)
+            (define-param (mb nb b ldb) B)
+            (cblas_dcopy n (ptr-elm a lda 0 j) 1 (ptr-elm b ldb k 0) ldb)}|
+This copies column @j of @A into row @k in @${B}.
+
+Note that @racket[dcopy] allows an increment @racket[INCX] of zero.
+With an increment of @racket[INX=0] we can copy the same element into
+all entries of the destination. 
+
+This trick is used in the implementation of @racket[make-flomat]:
+@codeblock|{
+(define (make-flomat m n [x 0.0])
+  (define a  (alloc-flomat m n))
+  (define x* (cast (malloc 1 _double 'atomic) _pointer _flomat))
+  (ptr-set! x* _double (real->double-flonum x))
+  (if (= x 0.0)
+      (memset a 0  (* m n) _double)
+      (cblas_dcopy (* m n) x* 0 a 1))
+  (flomat m n a m))}|
+Here the case @racket[0.0] is special cased to use the faster @racket[memset].
+
+@defform[(define-cblas name body ...)]
+The form @racket[define-cblas] is defined via @racket[define-ffi-definer].
+See @secref["Defining_Bindings" #:doc '(lib "scribblings/foreign/foreign.scrbl")]
+in the Reference manual.
+
+@deftogether[((defidform cblas_daxpy)
+              (defidform cblas_dcopy)            
+              (defidform cblas_ddot)
+              (defidform cblas_dgemm)
+              (defidform cblas_dgemv)
+              (defidform cblas_dnrm2)
+              (defidform cblas_dscal)
+              (defidform cblas_dswap)
+              (defidform cblas_ixamax))]
+The bindings used internally by @racket[flomat]. See the source of
+@hyperlink["https://github.com/soegaard/sci/blob/master/flomat/flomat.rkt"]{flomat.rkt}
+at Github for the exact calling conventions.
+
+Most users won't need to use these, but they are available if need be.
 
 
+@subsection{LAPACK Bindings}
+
+LAPACK is a Fortran library, so the calling conventions are sligthly
+different than usual. First of all, let's look at an example: the
+function @tt{dlange} which is used to compute norms of a real matrix.
+
+The Fortran documentation has the following to say about the
+types of the arguments:
+@verbatim{
+      DOUBLE PRECISION FUNCTION DLANGE( NORM, M, N, A, LDA, WORK )
+
+      NORM    (input)     CHARACTER*1
+      M       (input)     INTEGER
+      N       (input)     INTEGER
+      A       (input)     DOUBLE PRECISION array, dimension (LDA,N)
+      LDA     (input)     INTEGER
+      WORK    (workspace) DOUBLE PRECISION array, dimension (MAX(1,LWORK))}
+
+The corresponding binding is:
+
+@codeblock|{
+(define-lapack dlange_
+  (_fun (norm : (_ptr i _byte)) 
+        (m    : (_ptr i _int))
+        (n    : (_ptr i _int))
+        (a    :  _flomat) 
+        (lda  : (_ptr i _int))
+        (work : (_ptr io _flomat))
+        -> _double))}|
+
+Note that all arguments are passed by reference.
+Use @racket[(_ptr i _)], @racket[(_ptr o _)] or @linebreak[]
+@racket[(_ptr io _)] for input, output and input/output arguments.
+
+Note that the size of an character is the same as byte.
+Use @racket[char->integer] in order to convert a Racket character
+into a byte.
+
+The function @racket[flomat-norm] sets up the arguments before calling @racket[dlange_]:
+@codeblock|{
+(define (flomat-norm A [norm-type 2])
+  (define-param (m n a lda) A)
+  (define norm (char->integer 
+                (match norm-type
+                  [1         #\1]
+                  ['inf      #\I]
+                  [2         #\F]
+                  ['max-abs  #\M]
+                  [_ (error)])))
+  (define lwork (if (equal? norm-type 'inf) (max 1 m) 1))
+  (define W (make-flomat lwork 1))
+  (define w (flomat-a W))
+  (dlange_ norm m n a lda w))}|
+Here the work array is only used when computing the infimum norm.
+
+
+@deftogether[((defidform dlange_)
+              (defidform dgeev_)
+              (defidform dgetrf_)
+              (defidform dgesvd_)
+              (defidform dgesdd_)
+              (defidform dgeqrf_)
+              (defidform dorgqr_)
+              (defidform dgetri_)
+              (defidform dpotrf_)
+              (defidform dgesv_)
+              (defidform dgelsd_))]
+The bindings from LAPACK used internally in flomat.
+See @hyperlink["http://www.netlib.org/lapack/"]{LAPACK Documentation}
+at Netlib.
+
+Most users won't need to use these, but they are available if need be.
+
+See the source of
+@hyperlink["https://github.com/soegaard/sci/blob/master/flomat/flomat.rkt"]{flomat.rkt}
+at Github for the exact calling conventions.
 
 

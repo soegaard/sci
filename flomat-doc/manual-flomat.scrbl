@@ -54,6 +54,13 @@
 @(define url-apple-blas-docs   "https://developer.apple.com/documentation/accelerate/blas?language=objc")
 @(define url-dcopy-docs        "http://www.netlib.org/lapack/explore-html/de/da4/group__double__blas__level1_ga21cdaae1732dea58194c279fca30126d.html")
 
+@(define (wikipedia name . preflow)
+   (define url (string-append "https://en.wikipedia.org/wiki/" name))
+   @margin-note{@hyperlink[url (list* @bold{Wikipedia: } " " preflow)]})
+
+@(define (wikipedia/section url . preflow)
+   @margin-note{@hyperlink[url (list* @bold{Wikipedia: } " " preflow)]})
+
 @(define (cblas-docs name . preflow)
    (define url (string-append "https://en.wikipedia.org/wiki/" name))
    @margin-note{@hyperlink[url (list* @bold{Wikipedia: } " " preflow)]})
@@ -849,9 +856,6 @@ will add the proper paths.
 
 @subsection{Representation}
 
-@(define (wikipedia name . preflow)
-   (define url (string-append "https://en.wikipedia.org/wiki/" name))
-   @margin-note{@hyperlink[url (list* @bold{Wikipedia: } " " preflow)]})
 
 @wikipedia["Row-_and_column-major_order"]{Column Major Order}
 An @mxn matrix is consist conceptually of @mxn floating points
@@ -1096,6 +1100,9 @@ The function @racket[matrix] also accepts @racket[f64vectors] as input.
 @defproc[(matrix! [obj value]) flomat?]
 Like @racket[matrix] but uses the same backing array if possible.
 
+@defproc[(column [x real?] ...) flomat?]
+Return a column vector (a @1xn matrix) with @racket[x ...] as entries.
+
 
 @defproc[(zeros [m natural?] [n natural? m]) flomat?]
 Create a an @mxn matrix with all zeros. If @racket[n]
@@ -1252,6 +1259,7 @@ function bound to the identifier @racket[f].
 @deftogether[[
   @defproc[(plus  [A flomat] ...+) flomat?]
   @defproc[(plus! [A flomat] ...+) flomat?]]]
+@wikipedia["Matrix_addition"]{Matrix Addition}
 Computes the matrix sum of one or more matrices.
 The function @racket[plus] allocates a new backing area.
 The function @racket[plus!] writes the result in the backing area of the first argument.
@@ -1259,6 +1267,7 @@ The function @racket[plus!] writes the result in the backing area of the first a
 @deftogether[[
   @defproc[(times  [A flomat] ...+) flomat?]
   @defproc[(times! [A flomat] ...+) flomat?]]]
+@wikipedia["Matrix_multiplication"]{Matrix Multiplication}
 Computes the matrix product of one or more matrices. 
 The function @racket[times] allocates a new backing area.
 The function @racket[times!] writes the result in the backing area of the first argument.
@@ -1273,6 +1282,7 @@ The function @racket[minus] allocates a new backing area.
 The function @racket[minus!] writes the result in the backing area of the first argument.
 
 @defproc[(power [A flomat?] [n natural?]) flomat?]
+@wikipedia/section["https://en.wikipedia.org/wiki/Matrix_multiplication#Powers_of_a_matrix"]{Powers of a matrix}
 Computes the @nth power of a matrix @A, where @n is a natural number.
 
 @examples[#:label #f #:eval quick-eval
@@ -1283,6 +1293,7 @@ Computes the @nth power of a matrix @A, where @n is a natural number.
 @deftogether[[
   @defproc[(transpose  [A flomat]) flomat?]
   @defproc[(transpose! [A flomat]) flomat?]]]
+@wikipedia["Transpose"]{Transpose}
 Computes the transpose of a matrix @${A}.
 
 The transpose of @${B=A^T} of an @mxn matrix @A is an @nxm matrix @${B=A^T} where @${b_{ij}=a_{ji}}.
@@ -1295,6 +1306,7 @@ The function @racket[minus!] writes the result in the backing area of the first 
 
 
 @defproc[(dot [v flomat?] [w flomat?]) real?]
+@wikipedia["Dot_product"]{Dot Product (Inner Product)}
 Computes the inner product (also known as the dot product) of two column vectors
 of the same length.
 
@@ -1307,6 +1319,7 @@ of the same length.
           (dot v w)]
 
 @defproc[(outer [A flomat?] [B flomat?]) flomat?]
+@wikipedia["Outer_product"]{Outer Product}
 Computes the outer product of the first column of @A and the first row of @${B}.
 
 The outer product of a column vector @A with @m rows and an row @B with @n columns
@@ -1318,6 +1331,7 @@ is an @mxn matrix @${O} with elements @${o_{i,j} = a_i\cdot b_j}.
           (outer A B)]
 
 @defproc[(kron [A flomat?] [B flomat?]) flomat?]
+@wikipedia["Kronecker_product"]{Kronecker Product}
 Computes the Kronecker product of the matrices @A and @${B}.
 
 The Kronecker product between two matrices @A and @B replaces
@@ -1328,6 +1342,62 @@ The Kronecker product is a generalization of the outer product.
           (define A (matrix '((1 2) (3 4))))
           (define B (matrix '((1 1) (1 1))))
           (kron A B)]
+
+
+@subsection[#:tag "ref:matrix-decompositions"]{Matrix Decompositions}
+
+@defproc[(cholesky [A flomat?] [triangle (or 'upper 'lower) 'lower]) flomat?]
+@wikipedia["Cholesky_decomposition"]{Cholesky Decomposition}
+Computes the Cholesky decomposition of a symmetric,
+positive-definite matrix matrix @${A}. Beware that @racket[cholesky] does
+not check that the matrix is symmetric and positive-definite.
+
+The Cholesky decomposition of a matrix @A has two forms:
+   @$${A = L L^T  \textrm{ or } A = U^T U,}
+where @L and @U are lower and upper triangular matrices.
+
+@examples[#:label #f #:eval quick-eval
+          (define A (matrix '((1 2) (2 4))))
+          (define L (cholesky A))
+          (list L (transpose L))
+          (times L (transpose L))
+          (define U (cholesky A 'upper))
+          (list (transpose U) U)          
+          (times (transpose U) U)]
+
+
+@defproc[(qr [A flomat?]) flomat?]
+@wikipedia["QR_decomposition"]{QR-Decomposition}
+Computes the QR-decomposition for a matrix @${A}.
+
+The QR Decomposition of @A consists of two matrices: an orthogonal matrix @Q
+and an upper triangular matrix @R such that @${A=QR}.
+
+@examples[#:label #f #:eval quick-eval
+          (define A (matrix '((1 2) (3 4))))
+          (define-values (Q R) (qr A))
+          (list Q R)
+          (times Q R)]
+
+
+@defproc[(svd [A flomat?]) flomat?]
+@wikipedia["Singular_value_decomposition"]{Singular Value Decomposition (SVD)}
+Computes the Singular Value Decomposition for a matrix @${A}.
+
+The Singular Value Decomposition (SVD) consists of three matrices: 
+a unitary matrix @U,
+a column vector of singular values @S and 
+a unitary matrix @${V^T} (@V transposed).
+
+Use the function @racket[diag] to construct a diagonal matrix from the singular values.
+
+@examples[#:label #f #:eval quick-eval
+          (define A (matrix '((1 2) (3 4))))
+          (define-values (U S VT) (svd A))
+          (define Σ (diag S))
+          (list U Σ VT S)
+          (times U Σ VT)]
+
 
 
 

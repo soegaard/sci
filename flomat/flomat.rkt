@@ -2738,10 +2738,10 @@
 (define (nrows A)   (flomat-m A))
 (define (ncols A)   (flomat-n A))
 
-(define augment flomat-augment)
-(define stack   flomat-stack)
-(define repeat  flomat-repeat)
-
+(define augment        flomat-augment)
+(define stack          flomat-stack)
+(define repeat         flomat-repeat)
+(define block-diagonal flomat-block-diagonal)
 
 (define (f64vector->flomat v [transpose? #f])
   (define m (f64vector-length v))

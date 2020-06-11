@@ -1111,6 +1111,19 @@ os omitted, a square @mxm matrix is returned.
 @defproc[(ones [m natural?] [n natural? m]) flomat?]
 Line @racket[zeros] but the all entries will be racket[1.0].
 
+@defproc[(diag [X (or flomat? vector?)] [m natural? #f] [n natural? #f] [reciproc? boolean? #f]) flomat?]
+Construct a diagonal matrix of size @mxn with elements from a standard Racket vector or a
+flomat column vector @${X}.
+
+If @racket[reciproc?] is true, then the diagonal will hold the reciprocal of the entries
+in @${X}.
+
+@examples[#:label #f
+          #:eval quick-eval
+          (diag (vector 1 2 3))
+          (diag (vector 1 2 3) 5 5)
+          (diag (vector 2 4) 2 2 #t)]
+
 
 @defproc[(eye [m natural?] [n natural? m] [k integer? 0]) flomat?]
 Create a @mxn matrix with ones on the @kth diagonal.
@@ -1186,9 +1199,65 @@ uses the one in @${A}.
           (reshape (arange 9) 3 3)
           (transpose (reshape (arange 9) 3 3))]
 
+@subsection[#:tag "ref:block-operations"]{Block Operations}
+
+@defproc[(augment [A flomat?] ...) flomat?]
+Two matrices with the same number of rows can be @emph{augmented}:
+
+@$${ \text{augment}( \begin{bmatrix} @barcol{A_0} \cdots &  @barcol{A_{n-1}} \end{bmatrix},
+                     \begin{bmatrix} @barcol{B_0} \cdots &  @barcol{B_{N-1}} \end{bmatrix} ) =
+                     \begin{bmatrix} @barcol{A_0} \cdots   @barcol{A_{n-1}} &
+                                     @barcol{B_0} \cdots   @barcol{B_{N-1}}
+                     \end{bmatrix}}
+
+The function @racket[augment] will augment one or more matrices with the same number of rows.
+
+@examples[#:label #f #:eval quick-eval
+          (augment (matrix '[[1 2]
+                             [3 4]])
+                   (matrix '[[5 6 7]
+                             [8 9 10]]))]
+
+@defproc[(stack [A flomat?] ...) flomat?]
+Two matrices with the same number of columns can be @emph{stacked}:
+
+
+@$${ \text{stack}(   \begin{bmatrix} @barrow{A_0} \\ \cdots \\  @barrow{A_{m-1}} \end{bmatrix},
+                     \begin{bmatrix} @barrow{B_0} \\ \cdots \\  @barrow{B_{M-1}} \end{bmatrix} ) =
+                     \begin{bmatrix} @barrow{A_0} \\ \cdots \\  @barrow{A_{m-1}} \\
+                                     @barrow{B_0} \\ \cdots \\  @barrow{B_{M-1}}
+                     \end{bmatrix}}
+
+The function @racket[stack] will stack one or more matrices with the same number of columns.
+
+@examples[#:label #f #:eval quick-eval
+          (stack (matrix '[[1 2]
+                           [3 4]])
+                 (matrix '[[5 6]
+                           [7 8]
+                           [9 10]]))]
+
+@defproc[(block-diagonal [A flomat?] ...+) flomat?]
+Make a block diagonal matrix with the matrices @racket[A ...] on the diagonal.
+
+@examples[#:label #f #:eval quick-eval
+          (block-diagonal (matrix '[[1 2]
+                                    [3 4]])
+                          (matrix '[[5 6]
+                                    [7 8]
+                                    [9 10]]))]
+
+@defproc[(repeat [A flomat?] [m natural?] [n natural? m]) flomat?]
+Make a matrix with @mxn blocks, each block is @${A}.
+
+@examples[#:label #f #:eval quick-eval
+          (define A (matrix '[[1 2]
+                              [3 4]]))
+          (repeat A 3)]
+
 
 @subsection[#:tag "ref:elementwise-operations"]{Elementwise Operations}
-
+@wikipedia["Hadamard_product_(matrices)"]{Pointwise Multiplication (Hadamard Prodcut)}
 Elementwise operations (also called @emph{pointwise} operations) work on each element.
 The operations all have names that being with a point.
 
@@ -1341,8 +1410,6 @@ The Kronecker product is a generalization of the outer product.
           (define A (matrix '((1 2) (3 4))))
           (define B (matrix '((1 1) (1 1))))
           (kron A B)]
-
-@subsection[#:tag "ref:matrix-invariants"]{Matrix Invariants}
 
 
 @subsection[#:tag "ref:norms-and-invariants"]{Norms and Invariants}
@@ -1504,7 +1571,7 @@ where @${A^0} is interpreted as the identity matrix of the same size as @${A}.
 The matrix exponential is well-defined for all square matrices @${A}.
 
 There is no routines in LAPACK for computing matrix exponentials.
-The algorithm used in flomat is from the paper
+The algorithm used in flomat is from the paper:
 
 @centered[@verbatim{
 "The Pade Method for computing the Matrix Exponential"

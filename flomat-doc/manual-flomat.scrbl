@@ -1272,6 +1272,14 @@ Given only one argument @${A}, @racket[minus] computes @${-A}.
 The function @racket[minus] allocates a new backing area.
 The function @racket[minus!] writes the result in the backing area of the first argument.
 
+@defproc[(power [A flomat?] [n natural?]) flomat?]
+Computes the @nth power of a matrix @A, where @n is a natural number.
+
+@examples[#:label #f #:eval quick-eval
+          (define A (matrix '((1 1) (0 1))))
+          (list (power A 0) (power A 1) (power A 2) (power A 3))]
+
+
 @deftogether[[
   @defproc[(transpose  [A flomat]) flomat?]
   @defproc[(transpose! [A flomat]) flomat?]]]
@@ -1281,6 +1289,45 @@ The transpose of @${B=A^T} of an @mxn matrix @A is an @nxm matrix @${B=A^T} wher
 
 The function @racket[minus] allocates a new backing area.
 The function @racket[minus!] writes the result in the backing area of the first argument.
+
+
+@subsection[#:tag "matrix-and-vector-products"]{Matrix and Vector Products}
+
+
+@defproc[(dot [v flomat?] [w flomat?]) real?]
+Computes the inner product (also known as the dot product) of two column vectors
+of the same length.
+
+@$${a\cdot b = \sum_{i=0}^{m-1} a_{i,0} b_{i,0}}
+
+
+@examples[#:label #f #:eval quick-eval
+          (define v (column -1 1))
+          (define w (matrix '((2) (2))))
+          (dot v w)]
+
+@defproc[(outer [A flomat?] [B flomat?]) flomat?]
+Computes the outer product of the first column of @A and the first row of @${B}.
+
+The outer product of a column vector @A with @m rows and an row @B with @n columns
+is an @mxn matrix @${O} with elements @${o_{i,j} = a_i\cdot b_j}.
+
+@examples[#:label #f #:eval quick-eval
+          (define A (column 2 3))
+          (define B (transpose (column 5 7)))
+          (outer A B)]
+
+@defproc[(kron [A flomat?] [B flomat?]) flomat?]
+Computes the Kronecker product of the matrices @A and @${B}.
+
+The Kronecker product between two matrices @A and @B replaces
+each element @${a} of @A with a copy of @B scaled with @${A}.
+The Kronecker product is a generalization of the outer product.
+
+@examples[#:label #f #:eval quick-eval
+          (define A (matrix '((1 2) (3 4))))
+          (define B (matrix '((1 1) (1 1))))
+          (kron A B)]
 
 
 

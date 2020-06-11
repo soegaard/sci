@@ -664,7 +664,7 @@ The standard 2-norm @${|\cdot|_2} can be computed by @racket[norm].
 For a column vector the norm is sometimes referred to as the length.
 
 @bold[@racket[(norm A)]] @linebreak[]
-Compute the square root om the sum of the square of all elements.
+Compute the square root of the sum of the square of all elements.
 
 @examples[#:label #f #:eval quick-eval
           (norm    (matrix '((1 1))))
@@ -1304,7 +1304,6 @@ The function @racket[minus!] writes the result in the backing area of the first 
 
 @subsection[#:tag "matrix-and-vector-products"]{Matrix and Vector Products}
 
-
 @defproc[(dot [v flomat?] [w flomat?]) real?]
 @wikipedia["Dot_product"]{Dot Product (Inner Product)}
 Computes the inner product (also known as the dot product) of two column vectors
@@ -1343,6 +1342,78 @@ The Kronecker product is a generalization of the outer product.
           (define B (matrix '((1 1) (1 1))))
           (kron A B)]
 
+@subsection[#:tag "ref:matrix-invariants"]{Matrix Invariants}
+
+
+@subsection[#:tag "ref:norms-and-invariants"]{Norms and Invariants}
+
+@defproc[(norm [A flomat?] [norm-type (or 2 1 'inf 'max-abs) 2]) real?]
+@wikipedia["Matrix_norm"]{Matrix Norm}
+Depending on @racket[norm-type], @racket[norm] will compute
+an 1-norm, an 2-norm, an infinity norm or the maximal absolute entry value.
+
+The default norm type is the 2-norm. 
+The 2-norm is the square root of the sum of the square of all elements.
+  @$${\left\lVert A \right\rVert_2 = \sqrt{\sum a_{ij}^2}}
+
+The 1-norm computes the maximum absolute column sum.
+  @$${\left\lVert A \right\rVert_1 = \max_j \sum_{i} |a_{ij}|}
+
+The infinity-norm computes the maximum absolute row sum.
+The 1-norm computes the maximum absolute column sum.
+  @$${\left\lVert A \right\rVert_\infty = \max_i \sum_{j} |a_{ij}|}
+
+The max-abs-normal computes the maximal absolute value (this is strictly
+speaking not a norm).
+  @$${\left\lVert A \right\rVert_\text{maxabs} = \max_i \max_j |a_{ij}|}
+
+@examples[#:label #f #:eval quick-eval
+          (define A (matrix '[[1 2]
+                              [3 4]]))
+          (norm A)
+          (norm A 1)         ; max col sum
+          (norm A 'inf)      ; max row sum
+          (norm A 'max-abs)  ; max abs value 
+
+          (define B (matrix '[[-1 -2]
+                              [-3 -4]]))
+          (norm B)
+          (norm B 1)         ; max col sum
+          (norm B 'inf)      ; max row sum
+          (norm B 'max-abs)  ; max abs value 
+] 
+
+
+@defproc[(det [A flomat? ]) flomat?]
+@wikipedia["Determinant"]{Determinant}
+Computes the determinant of a square matrix @${A}.
+
+@examples[#:label #f #:eval quick-eval
+          (det  (matrix '((1 2) (0 4))))
+          (det  (matrix '((1 1) (2 2))))]
+
+@defproc[(trace [A flomat?]) flomat?]
+@wikipedia["Trace_(linear_algebra)"]{Trace}
+Computes the trace: the sum along a diagonal, of a matrix.
+@$${ \text{trace}(A) = \sum_k a_{kk} }
+
+@examples[#:label #f #:eval quick-eval
+          (trace (matrix '((1 2) (0 4))))]
+
+
+@defproc[(rank [A flomat?]) flomat?]
+@wikipedia["Rank_(linear_algebra)"]{Rank}
+Computes the rank of a square matrix.
+
+The rank is the equal to:
+@itemlist[
+  @item{the dimension of the column space}
+  @item{the dimension of the row space}
+  @item{the number of non-zero singular values in an SVD (singular value decomposition)}]
+
+@examples[#:label #f #:eval quick-eval
+          (rank  (matrix '((1 2) (0 4))))
+          (rank  (matrix '((1 1) (2 2))))]
 
 @subsection[#:tag "ref:matrix-decompositions"]{Matrix Decompositions}
 
@@ -1398,6 +1469,54 @@ Use the function @racket[diag] to construct a diagonal matrix from the singular 
           (list U Σ VT S)
           (times U Σ VT)]
 
+@subsection[#:tag "ref:matrix-eigenvalues-and-eigenvectors"]{Matrix Eigenvalues and Eigenvectors}
+
+Eigenvalues and eigenvectors of a square matrix can be computed with @racket[eig] 
+or, if only the eigenvalues are needed, with @racket[eigvals].
+Note that even if all elements of a matrix are real, the eigenvalues in some
+cases are complex. Therefore the eigenvalues are returned as a standard
+Racket vector.
+
+@defproc[(eig [A flomat?]) (values vector? flomat?)]
+@wikipedia["Eigenvalues_and_eigenvectors"]{Eigenvalues and eigenvectors}
+Compute eigenvalues and right eigenvectors.
+
+@defproc[(eigvals [A flomat?]) vector?]  
+Compute eigenvalues.
+
+@examples[#:label #f #:eval quick-eval
+          (eig     (diag '(1 2)))
+          (eigvals (diag '(1 2)))
+          (eig     (matrix '((1 -1) (1 1))))]
+
+
+
+@subsection[#:tag "ref:matrix-functions"]{Matrix Functions}
+
+@defproc[(expm [A flomat?]) flomat?]
+@wikipedia["Matrix_exponential"]{Matrix Exponential}
+Compute the matrix exponential @${\exp(A)}, where @A is a square matrix.
+
+The matrix exponential @${\exp(A)} of a square matrix @${A} is defined as:
+    @$${ \exp(A) = \sum_{k=0}^{\infty} \frac{1}{k!} A^k }
+where @${A^0} is interpreted as the identity matrix of the same size as @${A}.
+
+The matrix exponential is well-defined for all square matrices @${A}.
+
+There is no routines in LAPACK for computing matrix exponentials.
+The algorithm used in flomat is from the paper
+
+@centered[@verbatim{
+"The Pade Method for computing the Matrix Exponential"
+M. Arioli, B. Codenotti, C. Fassino
+https://www.sciencedirect.com/science/article/pii/0024379594001901
+}]
+
+
+@examples[#:label #f #:eval quick-eval
+          (list (exp 1) (exp 2))
+          (expm (matrix '((1 0) (0 2))))
+          (expm (matrix '((1 2) (3 4))))]
 
 
 
@@ -1624,6 +1743,12 @@ The function @racket[flomat-norm] sets up the arguments before calling @racket[d
   (dlange_ norm m n a lda w))}|
 Here the work array is only used when computing the infimum norm.
 
+
+@defform[(define-lapack name body ...)]
+The form @racket[define-lapack] is defined via @racket[define-ffi-definer].
+See @secref["Defining_Bindings" #:doc '(lib "scribblings/foreign/foreign.scrbl")]
+in the Reference manual. LAPACK uses an underscore suffix, so remember to an
+underscore to any names seen in the LAPACK documentation.
 
 @deftogether[((defidform dlange_)
               (defidform dgeev_)

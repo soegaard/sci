@@ -3130,7 +3130,7 @@
   (real+imaginary->vector WR WI))
 
 (define (norm A [type 2])
-  (flomat-norm A 2))
+  (flomat-norm A type))
 
 (define (det A)
   (flomat-determinant A))

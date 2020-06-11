@@ -12,6 +12,7 @@
 @; Convenient shortcuts for writing TeX.
 @(use-mathjax)
 @(define mxn @${m\times n})
+@(define nxm @${m\times n})
 @(define mxm @${m\times m})
 @(define nxn @${n\times n})
 @(define mx1 @${m\times 1})
@@ -269,9 +270,10 @@ and defaults to @m and @${0} respectively.
           (list (eye 3) (eye 3 4) (eye 3 3 1) (eye 3 3 -1))]
 
 To create ranges of values use @racket[arange] or @racket[colarange] which both work like
-@racket[(matrix (range start stop step))], but avoids build an intermediary list.
+@racket[(matrix (range start stop step))], but avoids building an intermediary list.
 The functions @racket[arange] and @racket[colarange] produce row and column vectors respectively.
-The vector created has length @racket[(ceiling (/ (- stop start) step))].
+The vector created has length
+@$${\huge\lceil\normalsize{ \frac{\text{stop}-\text{start}}{\text{step}}}\huge\rceil\normalsize.}
 
 @bold[@racket[(arange start stop step)]]
   create a row vector with values from start to stop (exclusively),
@@ -296,18 +298,6 @@ The vector created has length @racket[(ceiling (/ (- stop start) step))].
           (colarange 5 10)
           (colarange 5)]
 
-Sometimes it is possible to keep the elements of matrix, but change its shape.
-
-@bold[@racket[(reshape A m n)]]  @linebreak[]
-  return a matrix with shape @mxn using the elements of @A,  @linebreak[]
-@bold[@racket[(reshape! A m n)]] @linebreak[]
-  return a matrix with shape @mxn using the elements of @A, share the backing area with @A
-
-@examples[#:label #f #:eval quick-eval
-          (arange 9)
-          (reshape (arange 9) 3 3)
-          (transpose (reshape (arange 9) 3 3))]
-
 As an alternative to @racket[arange] consider using @racket[linspace], which
 allow you to provide an exact endpoint.
 
@@ -320,6 +310,19 @@ allow you to provide an exact endpoint.
 @examples[#:label #f #:eval quick-eval
           (linspace 2 4 6)
           (linspace 2 4 6 #f)]
+
+Sometimes it is possible to keep the elements of matrix, but change its shape.
+
+@bold[@racket[(reshape A m n)]]  @linebreak[]
+  return a matrix with shape @mxn using the elements of @A,  @linebreak[]
+@bold[@racket[(reshape! A m n)]] @linebreak[]
+  return a matrix with shape @mxn using the elements of @A, share the backing area with @A
+
+@examples[#:label #f #:eval quick-eval
+          (arange 9)
+          (reshape (arange 9) 3 3)
+          (transpose (reshape (arange 9) 3 3))]
+
 
 
 @subsection{Elementwise Operations}
@@ -964,12 +967,19 @@ which has upper left corner in @${(i,j)}.
 In the same manner you can use @racket[(ptr-elm a lda i j)] to find 
 start of an submatrix in @racket[A].
 
+
 @subsection{Simple Constructors}
 
 @defproc[(make-flomat [m natural?] [n natural?] [x natural? 0.0]) flomat?]
 Returns a flomat of dimension @mxn with an backing array of size @${mn}.
-All entires are initialized to contain @racket[x].
+All entries are initialized to contain @racket[x].
 @examples[#:label #f #:eval quick-eval (make-flomat 2 3 4)]
+
+@defform[(flomat: [[x ...] ...])]
+This is "literal syntax" and expands into a form that constructs
+a @racket[flomat] containing the numbers @racket[x ... ...].
+The default printer outputs small matrices as flomat literals, so
+results can be copy-pasted into the repl.
 
 @defproc[(list->flomat [xss list-of-list-of-number]) flomat]
 Given a matrix represented as list of rows (where a row is a list of numbers),
@@ -1002,6 +1012,172 @@ Return a vector of all entries in @racket[A] in row-major order.
 Construct a @racket[flomat?] matrix with entries from @racket[xs].
 The numbers in @racket[xs] are expected to be in row major order.
 @examples[#:label #f #:eval quick-eval (flomat/dim 2 3   1 2 3 4 5 6)]
+
+
+@subsection[#:tag "ref:basic-properties"]{Basic Properties}
+
+The basic properties of an @racket[flomat] can be examined using these functions:
+
+@defproc[(shape [A flomat?]) (list natural? natural?)]
+Return a list with the number of rows and columns of the matrix @${A}.
+
+@defproc[(size [A flomat?]) natural?]
+Return the size of a matrix @${A}. That is return @${mn} where
+@m is the number of rows and @n is the number columns. Note that
+the size of a matrix can be smaller than the length of the
+backing array, if the leading dimension of the matrix is a non-unit.
+
+@defproc[(nrows [A flomat?]) natural?]
+Return the number of rows, @m, in the matrix @${A}.
+
+@defproc[(ncols [A flomat?]) natural?]
+Return the number of columns, @n, in the matrix @${A}.
+
+@examples[#:label #f #:eval quick-eval
+          (define A (flomat: [[1 2 3]
+                              [4 5 5]]))
+          (shape A)   ; dimensions 
+          (size  A)
+          (nrows A)
+          (ncols A)]
+
+
+@subsection[#:tag "ref:basic-indexing"]{Basic Indexing}
+
+Since a matrix is divided into rows and columns we can refer to an
+element in the matrix by row and column numbers. The element @${a_{ij}} on the
+@ith row and @jth column is referred to as the element with index @${(i,j)}.
+
+The indices are zero-based so a matrix with @m rows and @n columns
+has row-indices @${0, 1, \ldots, m-1} and column-indices @${0, 1, \ldots n-1}.
+
+@$${A = 
+    \begin{bmatrix}
+     a_{0,0}   & a_{0,1} & \cdots  &  a_{0,n-1}   \\ 
+     a_{1,0}   & a_{1,1} & \cdots  & a_{1,n-1}    \\
+     \vdots    & \vdots  & \cdots  & \vdots       \\
+     a_{m-1,0} & a_{m-1,1} & \cdots & a_{m-1,n-1} \\
+    \end{bmatrix}}
+
+@defproc[(ref [A flomat?] [i natural?] [j natural?]) real?]
+Return @${a_{ij}} the element in @A with index @${(i,j)}.
+
+@defproc[(row [A flomat?] [i natural?]) flomat?]
+Return the @ith row of @A as a row vector i.e. as a matrix of dimension @${1\times n}.
+Allocates a new backing array.
+
+@defproc[(col [A flomat?] [j natural?]) flomat?]
+Return the @jth column of @A as a column vector i.e. as a matrix of dimension @${m\times 1}.
+Allocates a new backing array.
+
+@defproc[(sub [A flomat?] [i natural?] [j natural?] [m natural?] [n natural?]) flomat?]
+Return the @mxn submatrix of with @A upper, left corner in @${(i,j)}.
+Allocates a new backing array.
+
+@deftogether[ [@defproc[(row! [A flomat?] [i natural?]) flomat?]
+               @defproc[(col! [A flomat?] [j natural?]) flomat?]
+               @defproc[(sub! [A flomat?] [i natural?] [j natural?] [m natural?] [n natural?]) flomat?]]]
+Like @racket[row], @racket[col] and @racket[sub], but uses the same backing array as @racket[A].
+
+
+@subsection[#:tag "ref:matrix-creation"]{Matrix Creation}
+
+@defproc[(matrix [obj value]) flomat?]
+Create a matrix with values from @racket[obj].
+
+Use @racket[matrix] to create a @racket[flomat] from existing Racket data.
+It can convert vector-of-vector-of and list-of-lists representation of matrices
+into the @racket[flomat] representation. A vector of numbers or a list
+of numbers will be converted into a column vector (a matrix with only one column).
+
+Any non-floating point numbers will be converted to floating point.
+The function @racket[matrix] also accepts @racket[f64vectors] as input.
+
+@defproc[(matrix! [obj value]) flomat?]
+Like @racket[matrix] but uses the same backing array if possible.
+
+
+@defproc[(zeros [m natural?] [n natural? m]) flomat?]
+Create a an @mxn matrix with all zeros. If @racket[n]
+os omitted, a square @mxm matrix is returned.
+
+@defproc[(ones [m natural?] [n natural? m]) flomat?]
+Line @racket[zeros] but the all entries will be racket[1.0].
+
+
+@defproc[(eye [m natural?] [n natural? m] [k integer? 0]) flomat?]
+Create a @mxn matrix with ones on the @kth diagonal.
+The main diagonal is the 0'th diagonal.
+Diagonals above the main diagonal have positive indices.
+Diagonals below the main diagonal have negative indices.
+
+Note: @racket[(eye n)] will create a square identity matrix of size @${n\times n}.
+
+The diagonals are indexed as follows:
+@$${\begin{bmatrix}
+      0 &  1 &  2 & 3   \\ 
+     -1 &  0 &  1 & 2   \\ 
+     -2 & -1 &  0 & 1   \\ 
+     -3 & -2 & -1 & 0    
+    \end{bmatrix}}
+
+@examples[#:label #f
+          #:eval quick-eval
+          (eye 4 4 1)
+          (eye 4 4 -1)]
+
+To create ranges of values use @racket[arange] or @racket[colarange] which both work like
+@racket[(matrix (range start stop step))], but avoids building an intermediary list.
+The functions @racket[arange] and @racket[colarange] produce row and column vectors respectively.
+The vector created has length
+@$${\huge\lceil\normalsize{ \frac{\text{stop}-\text{start}}{\text{step}}}\huge\rceil\normalsize.}
+
+@deftogether[[
+  @defproc[(arange [start real?] [stop real?] [step real? 1.0]) flomat?]
+  @defproc[(arange               [stop real?])                  flomat?]]]
+Returns a row vector with values from start to stop (exclusively), here step is the gap between values.
+The call @racket[(arange stop)] is equivalent to @racket[(arange 0.0 stop 1.0)].
+
+Note: If you need an exact endpoint, then use @racket[linspace] instead.
+
+
+@deftogether[[
+  @defproc[(colarange [start real?] [stop real?] [step real? 1.0]) flomat?]
+  @defproc[(colarange               [stop real?])                  flomat?]]]
+Like @racket[arange] but produces a column vector.
+
+@examples[#:label #f #:eval quick-eval
+          (arange 5 10 2)
+          (arange 5 10)
+          (arange 5)]
+@examples[#:label #f #:eval quick-eval
+          (colarange 5 10 2)
+          (colarange 5 10)
+          (colarange 5)]
+
+
+@deftogether[[
+  @defproc[(linspace [start real?] [stop real?] [num natural?])                    flomat?]
+  @defproc[(linspace [start real?] [stop real?] [num natural?] [include-last? #f]) flomat?]]]
+Return a column vector with @racket[num] numbers evenly spaced from
+@racket[start] to @racket[stop]. If the fourth argument is #f, the
+last number is omitted.
+
+@examples[#:label #f #:eval quick-eval
+          (linspace 2 4 6)
+          (linspace 2 4 6 #f)]
+
+@deftogether[[
+  @defproc[(reshape  [A flomat?] [m natural?] [n natural?]) flomat?]
+  @defproc[(reshape! [A flomat?] [m natural?] [n natural?]) flomat?]]]
+Return a matrix with shape @mxn using the elements of @${A}.
+The function @racket[reshape] creates a new backing area and @racket[reshape!]
+uses the one in @${A}.
+
+@examples[#:label #f #:eval quick-eval
+          (arange 9)
+          (reshape (arange 9) 3 3)
+          (transpose (reshape (arange 9) 3 3))]
 
 
 @subsection[#:tag "ref:elementwise-operations"]{Elementwise Operations}
@@ -1071,7 +1247,40 @@ Define unary/binary pointwise functions @racket[.f] and @racket[.f!] which appli
 function bound to the identifier @racket[f].
 
 
-         
+@subsection[#:tag "ref:matrix-operations"]{Matrix Operations}
+
+@deftogether[[
+  @defproc[(plus  [A flomat] ...+) flomat?]
+  @defproc[(plus! [A flomat] ...+) flomat?]]]
+Computes the matrix sum of one or more matrices.
+The function @racket[plus] allocates a new backing area.
+The function @racket[plus!] writes the result in the backing area of the first argument.
+
+@deftogether[[
+  @defproc[(times  [A flomat] ...+) flomat?]
+  @defproc[(times! [A flomat] ...+) flomat?]]]
+Computes the matrix product of one or more matrices. 
+The function @racket[times] allocates a new backing area.
+The function @racket[times!] writes the result in the backing area of the first argument.
+
+@deftogether[[
+  @defproc[(minus  [A flomat] [B flomat] ...) flomat?]
+  @defproc[(minus! [A flomat] [B flomat] ...) flomat?]]]
+Subtracts the matrices @${B\ldots} from @${A}.
+Given only one argument @${A}, @racket[minus] computes @${-A}.
+
+The function @racket[minus] allocates a new backing area.
+The function @racket[minus!] writes the result in the backing area of the first argument.
+
+@deftogether[[
+  @defproc[(transpose  [A flomat]) flomat?]
+  @defproc[(transpose! [A flomat]) flomat?]]]
+Computes the transpose of a matrix @${A}.
+
+The transpose of @${B=A^T} of an @mxn matrix @A is an @nxm matrix @${B=A^T} where @${b_{ij}=a_{ji}}.
+
+The function @racket[minus] allocates a new backing area.
+The function @racket[minus!] writes the result in the backing area of the first argument.
 
 
 

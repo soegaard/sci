@@ -2725,7 +2725,7 @@
 ;;; HIGH LEVEL
 ;;;
 
-(define (mat? A) (flomat? A))
+(define (mat? A)  (flomat? A))
 (define (row? A)  (and (flomat? A) (flomat-row-vector? A)))
 (define (col? A)  (and (flomat? A) (flomat-column-vector? A)))
 

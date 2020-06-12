@@ -705,14 +705,14 @@ in the equation:
 
     @$${AX = B,}
 
-where @A is a an @mxm matrix, and both @X and @B are @${mxn}.
+where @A is a an @mxm matrix, and both @X and @B are @${m\times n}.
 
 Note that @A needs to be of full rank for the equation
 to have a solution. The solver doesn't check that the input
 matrix has full rank, it just runs it computation as usual.
 To check that the output from @racket[solve] is indeed a solution,
 you can evaluate @racket[(times A X)] and compare with @${B}.
-The name @racket[mldivide] is short for "Matrix Left divide".
+The name @racket[mldivide] is short for "Matrix Left divide" (think @${X=A\backslash B}).
 Although @racket[mldivide] doesn't find @X by 
 multiplying @B with @${A^{-1}} on the left, 
 it is a fitting analogy.
@@ -730,7 +730,7 @@ of rows in @A must be the same as the number columns in @${B}.
 
 @bold[@racket[(mrdivide B A)]] @linebreak[]
 Solve the equation @${XA = B}.
-The name @racket[mrdivide] is short for "Matrix Right divide".
+The name @racket[mrdivide] is short for "Matrix Right divide" (think @${X=A/B}).
 
 @examples[#:label #f #:eval quick-eval
           (define A (matrix '((1 2) (3 4))))
@@ -772,10 +772,10 @@ The pseudo inverse of an @mxn matrix is of size @${n\times m}.
           (list B+ (times B+ B B+) (times B B+ B))]
 
 
-@subsection{Least Square Problems}
+@subsection{Least Squares Problems}
 
 Let @A be an @mxn matrix and let @b be an @nx1 column vector.
-The equation @${Ax=b} may (depending on @A) may not have
+The equation @${Ax=b} (depending on @A) may not have
 an unique solution - or a solution at all.
 
 As an alternative, one can look for the vector @x that minimizes:
@@ -1482,6 +1482,82 @@ The rank is the equal to:
           (rank  (matrix '((1 2) (0 4))))
           (rank  (matrix '((1 1) (2 2))))]
 
+
+@subsection[#:tag "ref:solving-equations-and-inverting-matrices"]{Solving Equations and Inverting Matrices}
+
+@defproc[(mldivide [A flomat?] [B flomat?]) flomat?]
+Solves the equation
+   @$${AX = B}
+where @A is a an @mxm matrix, and both @X and @B are @${m\times n}.
+
+The computation is done using @${LU}-decomposition with partial pivoting.
+
+The matrix @A must be square and of full rank, the number 
+of rows in @A must be the same as the number columns in @${B}.
+
+Note that @A needs to be of full rank for the equation
+to have a solution. The solver doesn't check that the input
+matrix has full rank, it just runs it computation as usual.
+
+To check that the output from @racket[solve] is indeed a solution,
+you can evaluate @racket[(times A X)] and compare with @${B}.
+
+The name @racket[mldivide] is short for "Matrix Left divide".
+Although @racket[mldivide] doesn't find @X by  multiplying @B
+with @${A^{-1}} on the left,  it is a fitting analogy.
+
+@examples[#:label #f #:eval quick-eval
+          (define A (matrix '((1 2) (3 4))))
+          (define B (matrix '((1) (0))))
+          (define X (mldivide A B))
+          (list X (times A X))]
+
+@defproc[(mrdivide [B flomat?] [A flomat?]) flomat?]
+Like @racket[mldivide] but solves the equations
+  @$${XA = B.}
+The name @racket[mrdivide] is short for "Matrix Right divide".
+
+@examples[#:label #f #:eval quick-eval
+          (define A (matrix '((1 2) (3 4))))
+          (define B (matrix '((2 4) (6 8))))
+          (define X (mrdivide B A))
+          (list X (times X A))]
+
+
+@defproc[(inv [A flomat?]) flomat?]
+Find the multiplicative inverse of a square matrix @${A}.
+The matrix needs to be of full rank.
+
+@examples[#:label #f #:eval quick-eval
+          (define A    (matrix '((1 2) (3 4))))
+          (define Ainv (inv A))
+          (list Ainv (times A Ainv))]
+
+An inverse of @A can be used to solve @${AX=B}, but
+using @racket[mldivide] directly is normally better. 
+
+
+@defproc[(pinv [A flomat?]) flomat?]
+Finds the Moore-Penrose pseudo-inverse @${A^+}of the matrix @${A}.
+The matrix @A does not need to be square.
+The pseudo inverse of an @mxn matrix is of size @${n\times m}.
+
+@examples[#:label #f #:eval quick-eval
+          (define A  (matrix '((1 2) (3 4))))
+          (define A+ (pinv A))
+          (list A+ (times A+ A A+) (times A A+ A))]
+
+@examples[#:label #f #:eval quick-eval
+          (define B  (matrix '((1 2 3) (4 5 6))))
+          (define B+ (pinv B))
+          (list B+ (times B+ B B+) (times B B+ B))]
+
+
+
+
+
+
+
 @subsection[#:tag "ref:matrix-decompositions"]{Matrix Decompositions}
 
 @defproc[(cholesky [A flomat?] [triangle (or 'upper 'lower) 'lower]) flomat?]
@@ -1556,6 +1632,46 @@ Compute eigenvalues.
           (eigvals (diag '(1 2)))
           (eig     (matrix '((1 -1) (1 1))))]
 
+@subsection[#:tag "ref:least-squares-problems"]{Least Squares Problems}
+
+Let @A be an @mxn matrix and let @b be an @nx1 column vector.
+The equation @${Ax=b} (depending on @A) may not have
+an unique solution - or a solution at all.
+
+As an alternative, one can look for the vector @x that minimizes:
+    @$${|Ax-b|_2,}
+where @${|\cdot|_2} is the Euclidean 2-norm.
+
+The function @racket[lstsq] return the minimum norm solution @x
+of the above the problem.
+
+If @racket[lstsq] is given an @nxk matrix @B, then the
+problem will be solved for each column @b of @${B}.
+
+
+
+@defproc[(lstsq [A flomat?] [B flomat?]) flomat?]
+Find minimum norm solution @x to the least squares problem:
+   @$${\text{minimize}_x |Ax-b|_2}
+for each column @b of a larger matrix @${B}.
+
+As an example, let's look at estimating @${b_0} and @${b_1} in the model:
+    @$${y=b_0\cdot x+b_1}
+given a data set consisting of corresponding @${x}- and @${y}-values.
+The calculation reveals that the relation between @x and @y is @${y=2x+1}.
+
+The matrix @X is called the @emph{design matrix} of the problem.
+See @hyperlink["https://en.wikipedia.org/wiki/Design_matrix"]{Design Matrix} at Wikipedia.
+In this case the design matrix has two columns: the first has the @${x}-values, the
+second contains just ones.
+
+@examples[#:label #f #:eval quick-eval
+                (define xs (column 0 1 2 3))
+                (define ys (column 1 3 5 7))
+                (define X  (augment xs (flomat-ones (nrows xs) 1)))
+                X
+                (define B  (lstsq X ys))
+                B]
 
 
 @subsection[#:tag "ref:matrix-functions"]{Matrix Functions}

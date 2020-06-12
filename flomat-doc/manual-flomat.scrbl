@@ -500,14 +500,14 @@ then use @racket[zeros!] to clear the elements.
           (zeros! B)
           A]
 
-To iterate over a row or a column use @racket[in-flrow] and @racket[in-flcolumn].
+To iterate over a row or a column use @racket[in-row] and @racket[in-col].
 
 @examples[#:label #f #:eval quick-eval
           (define A (matrix '((11 22) (33 44))))
-          (for/list ([   x  (in-flrow A 0)]) x)
-          (for/list ([(i x) (in-flrow A 0)]) (list x i))
-          (for/list ([   x  (in-flcolumn A 0)]) x)
-          (for/list ([(i x) (in-flcolumn A 0)]) (list x i))]
+          (for/list ([   x  (in-row A 0)]) x)
+          (for/list ([(i x) (in-row A 0)]) (list x i))
+          (for/list ([   x  (in-col A 0)]) x)
+          (for/list ([(i x) (in-col A 0)]) (list x i))]
 
 @subsection{Basic Linear Algebra}
 

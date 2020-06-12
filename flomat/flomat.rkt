@@ -1393,8 +1393,8 @@
     (raise-argument-error 
        who  "The two inputs must be vectors of the same length" (list X Y)))
   (for/vector #:length mx
-      ([xi (in-flcolumn X)]
-       [yi (in-flcolumn Y)])
+      ([xi (in-col X)]
+       [yi (in-col Y)])
     (if (zero? yi)
         xi
         (make-rectangular xi yi))))
@@ -1607,7 +1607,7 @@
 (define (flomat-diagonal-from-singular-values m n S [reciproc? #f])
   (define A (flomat-zeros m n))
   (for ([i (in-range m)]
-        [s (in-flcolumn S)])
+        [s (in-col S)])
     (flomat-set! A i i (if reciproc? (/ 1 s) s)))
   A)
 
@@ -2281,7 +2281,7 @@
 ;;; SEQUENCES
 ;;; 
 
-(define (in-flrow/proc A r)
+(define (in-row/proc A r)
   (define-param (m n a lda) A)
   (make-do-sequence
    (λ ()
@@ -2291,11 +2291,11 @@
      (define (continue? j) (< j n))
      (values pos->elm initial-pos continue? #f #f))))
 
-; (in-flrow M i]
+; (in-row M i]
 ;     Returns a sequence of all elements of row i,
 ;     that is xi0, xi1, xi2, ...
-(define-sequence-syntax in-flrow
-  (λ () #'in-flrow/proc)
+(define-sequence-syntax in-row
+  (λ () #'in-row/proc)
   (λ (stx)
     (syntax-case stx ()
       [[(x) (_ M-expr r-expr)]
@@ -2307,9 +2307,9 @@
                (values M1 r-expr rd cd a lda))])
            (begin 
              (unless (flomat? M) 
-               (raise-type-error 'in-flrow "expected flomat, got ~a" M))             
+               (raise-type-error 'in-row "expected flomat, got ~a" M))             
              (unless (and (integer? r) (and (<= 0 r ) (< r m))) 
-               (raise-type-error 'in-flrow "expected row number" r)))
+               (raise-type-error 'in-row "expected row number" r)))
            ([j 0])
            (< j n)
            ([(x) (unsafe-ref a lda r j)])
@@ -2325,9 +2325,9 @@
                (values M1 r-expr rd cd a lda))])
            (begin 
              (unless (flomat? M) 
-               (raise-type-error 'in-flrow "expected flomat, got ~a" M))             
+               (raise-type-error 'in-row "expected flomat, got ~a" M))             
              (unless (and (integer? r) (and (<= 0 r ) (< r m))) 
-               (raise-type-error 'in-flrow "expected row number" r)))
+               (raise-type-error 'in-row "expected row number" r)))
            ([j 0])
            (< j n)
            ([(x) (unsafe-ref a lda r j)]
@@ -2336,13 +2336,13 @@
            #true
            [(+ j 1)]))]
       [[_ clause] (raise-syntax-error 
-                   'in-flrow "expected (in-flrow <flomat> <row>)" #'clause #'clause)])))
+                   'in-row "expected (in-row <flomat> <row>)" #'clause #'clause)])))
 
 ; (in-flcol M j]
 ;     Returns a sequence of all elements of column j,
 ;     that is x0j, x1j, x2j, ...
 
-(define (in-flcolumn/proc A s)
+(define (in-col/proc A s)
   (define-param (m n a lda) A)
   (make-do-sequence
    (λ ()
@@ -2352,8 +2352,8 @@
      (define (continue? i) (< i m))
      (values pos->elm next-pos initial-pos #f #f))))
 
-(define-sequence-syntax in-flcolumn
-  (λ () #'in-flcolumn/proc)
+(define-sequence-syntax in-col
+  (λ () #'in-col/proc)
   (λ (stx)
     (syntax-case stx ()
       ; M-expr evaluates to column
@@ -2382,11 +2382,11 @@
                (values M1 s-expr rd cd a lda))])
            (begin 
              (unless (flomat? M) 
-               (raise-type-error 'in-flcolumn "expected matrix, got ~a" M))
+               (raise-type-error 'in-col "expected matrix, got ~a" M))
              (unless (integer? s) 
-               (raise-type-error 'in-flcolumn "expected column number, got ~a" s))
+               (raise-type-error 'in-col "expected column number, got ~a" s))
              (unless (and (integer? s) (and (<= 0 s ) (< s n))) 
-               (raise-type-error 'in-flcolumn "expected column number, got ~a" s)))
+               (raise-type-error 'in-col "expected column number, got ~a" s)))
            ([j 0])
            (< j m)
            ([(x) (unsafe-ref a lda j s)])
@@ -2415,7 +2415,7 @@
            #true
            [(+ j 1)]))]
       [[_ clause] (raise-syntax-error 
-                   'in-flcolumn "expected (in-flcolumn <flomat> <column>)" #'clause #'clause)])))
+                   'in-col "expected (in-col <flomat> <column>)" #'clause #'clause)])))
 
 
 ;;;
@@ -2657,8 +2657,8 @@
   ; compute outer product between first column of A and first row of B
   (define-values (am an) (flomat-dimensions A1))
   (define-values (bm bn) (flomat-dimensions B1))
-  (for*/flomat am bn ([a (in-flcolumn A1 0)]
-                        [b (in-flrow    B1 0)])
+  (for*/flomat am bn ([a (in-col A1 0)]
+                        [b (in-row    B1 0)])
                  (* a b)))
 
 
@@ -3296,17 +3296,17 @@
                   (list->flomat '[[1 1 1 1 1] [1 2 4 8 16] [1 3 9 27 81]])))
    (with-check-info
     (['test-case 'in-column])
-    (check-equal? (for/list ([x (in-flcolumn (flomat/dim 2 2  1 2 3 4) 0)]) x)
+    (check-equal? (for/list ([x (in-col (flomat/dim 2 2  1 2 3 4) 0)]) x)
                   '(1. 3.))
-    (check-equal? (for/list ([x (in-flcolumn (flomat/dim 2 2  1 2 3 4) 1)]) x)
+    (check-equal? (for/list ([x (in-col (flomat/dim 2 2  1 2 3 4) 1)]) x)
                   '(2. 4.))
-    (check-equal? (for/list ([x (in-flcolumn (flcolumn 5 2 3))]) x)
+    (check-equal? (for/list ([x (in-col (flcolumn 5 2 3))]) x)
                   '(5. 2. 3.)))
    (with-check-info
     (['test-case 'in-row])
-    (check-equal? (for/list ([x (in-flrow (flomat/dim 2 2  1 2 3 4) 0)]) x)
+    (check-equal? (for/list ([x (in-row (flomat/dim 2 2  1 2 3 4) 0)]) x)
                   '(1. 2.))
-    (check-equal? (for/list ([x (in-flrow (flomat/dim 2 2  1 2 3 4) 1)]) x)
+    (check-equal? (for/list ([x (in-row (flomat/dim 2 2  1 2 3 4) 1)]) x)
                   '(3. 4.)))
    (with-check-info
     (['test-case 'for/flomat:])

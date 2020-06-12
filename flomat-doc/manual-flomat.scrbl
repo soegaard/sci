@@ -183,6 +183,9 @@ has row-indices @${0, 1, \ldots, m-1} and column-indices @${0, 1, \ldots n-1}.
 
 @bold[@racket[(ref A i j)]]
    the element in @A with index @${(i,j)}  @linebreak[]
+@bold[@racket[(mset! A i j x)]]
+   change element in @A with index @${(i,j)} to @${x}  @linebreak[]
+
 @bold[@racket[(row A i)]]
    the @ith row of @A                      @linebreak[]
 @bold[@racket[(col A j)]]
@@ -1066,6 +1069,9 @@ has row-indices @${0, 1, \ldots, m-1} and column-indices @${0, 1, \ldots n-1}.
 @defproc[(ref [A flomat?] [i natural?] [j natural?]) real?]
 Return @${a_{ij}} the element in @A with index @${(i,j)}.
 
+@defproc[(mset! [A flomat?] [i natural?] [j natural?] [x real?]) real?]
+Overwrite @${a_{ij}}, the element in @A with index @${(i,j)}, with the number @${x}.
+
 @defproc[(row [A flomat?] [i natural?]) flomat?]
 Return the @ith row of @A as a row vector i.e. as a matrix of dimension @${1\times n}.
 Allocates a new backing array.
@@ -1103,13 +1109,24 @@ Like @racket[matrix] but uses the same backing array if possible.
 @defproc[(column [x real?] ...) flomat?]
 Return a column vector (a @1xn matrix) with @racket[x ...] as entries.
 
-
-@defproc[(zeros [m natural?] [n natural? m]) flomat?]
+@defproc[(zeros  [m natural?] [n natural? m]) flomat?]
 Create a an @mxn matrix with all zeros. If @racket[n]
 os omitted, a square @mxm matrix is returned.
 
 @defproc[(ones [m natural?] [n natural? m]) flomat?]
 Line @racket[zeros] but the all entries will be racket[1.0].
+
+@defproc[(constant! [A flomat?] [x real?]) flomat?]
+Overwrite all entries in @A with @${x}.
+Return @${A}.
+
+@deftogether[[
+  @defproc[(zeros! [A flomat?]) flomat?]
+  @defproc[(ones!  [A flomat?]) flomat?]]]
+Overwrite @A with zeros or ones.
+Returns @${A}.
+
+
 
 @defproc[(diag [X (or flomat? vector?)] [m natural? #f] [n natural? #f] [reciproc? boolean? #f]) flomat?]
 Construct a diagonal matrix of size @mxn with elements from a standard Racket vector or a

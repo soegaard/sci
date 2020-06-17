@@ -663,7 +663,7 @@ Compute eigenvalues.
 
 @subsection{Norms and Invariants}
 
-The standard 2-norm @${|\cdot|_2} can be computed by @racket[norm].
+The standard Frobenius norm @${|\cdot|} can be computed by @racket[norm].
 For a column vector the norm is sometimes referred to as the length.
 
 @bold[@racket[(norm A)]] @linebreak[]
@@ -1434,11 +1434,11 @@ The Kronecker product is a generalization of the outer product.
 @defproc[(norm [A flomat?] [norm-type (or 2 1 'inf 'max-abs) 2]) real?]
 @wikipedia["Matrix_norm"]{Matrix Norm}
 Depending on @racket[norm-type], @racket[norm] will compute
-an 1-norm, an 2-norm, an infinity norm or the maximal absolute entry value.
+an 1-norm, a Frobenius norm, an infinity norm or the maximal absolute entry value.
 
-The default norm type is the 2-norm. 
-The 2-norm is the square root of the sum of the square of all elements.
-  @$${\left\lVert A \right\rVert_2 = \sqrt{\sum a_{ij}^2}}
+The default norm type is the Frobenius norm. 
+The Frobenius norm is the square root of the sum of the square of all elements.
+  @$${\left\lVert A \right\rVert_\textrm{Frobenius} = \sqrt{\sum a_{ij}^2}}
 
 The 1-norm computes the maximum absolute column sum.
   @$${\left\lVert A \right\rVert_1 = \max_j \sum_{i} |a_{ij}|}
@@ -1447,21 +1447,20 @@ The infinity-norm computes the maximum absolute row sum.
 The 1-norm computes the maximum absolute column sum.
   @$${\left\lVert A \right\rVert_\infty = \max_i \sum_{j} |a_{ij}|}
 
-The max-abs-normal computes the maximal absolute value (this is strictly
-speaking not a norm).
+The max-abs-normal computes the maximal absolute value.
   @$${\left\lVert A \right\rVert_\text{maxabs} = \max_i \max_j |a_{ij}|}
 
 @examples[#:label #f #:eval quick-eval
           (define A (matrix '[[1 2]
                               [3 4]]))
-          (norm A)
+          (norm A)           ; Frobenius
           (norm A 1)         ; max col sum
           (norm A 'inf)      ; max row sum
           (norm A 'max-abs)  ; max abs value 
 
           (define B (matrix '[[-1 -2]
                               [-3 -4]]))
-          (norm B)
+          (norm B)           ; Frobenius
           (norm B 1)         ; max col sum
           (norm B 'inf)      ; max row sum
           (norm B 'max-abs)  ; max abs value 

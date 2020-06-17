@@ -1448,7 +1448,7 @@ The 1-norm computes the maximum absolute column sum.
   @$${\left\lVert A \right\rVert_\infty = \max_i \sum_{j} |a_{ij}|}
 
 The max-abs-normal computes the maximal absolute value.
-  @$${\left\lVert A \right\rVert_\text{maxabs} = \max_i \max_j |a_{ij}|}
+  @$${\left\lVert A \right\rVert_\text{max} = \max_i \max_j |a_{ij}|}
 
 @examples[#:label #f #:eval quick-eval
           (define A (matrix '[[1 2]

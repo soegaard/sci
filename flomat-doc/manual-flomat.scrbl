@@ -1456,14 +1456,14 @@ The max-abs-normal computes the maximal absolute value.
           (norm A)           ; Frobenius
           (norm A 1)         ; max col sum
           (norm A 'inf)      ; max row sum
-          (norm A 'max-abs)  ; max abs value 
+          (norm A 'max)      ; max abs value 
 
           (define B (matrix '[[-1 -2]
                               [-3 -4]]))
           (norm B)           ; Frobenius
           (norm B 1)         ; max col sum
           (norm B 'inf)      ; max row sum
-          (norm B 'max-abs)  ; max abs value 
+          (norm B 'max)      ; max abs value 
 ] 
 
 

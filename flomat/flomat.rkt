@@ -1284,10 +1284,10 @@
   (define-param (m n a lda) A)
   (define norm (char->integer 
                 (match norm-type
-                  [1         #\1]
-                  ['inf      #\I]
-                  ['frob      #\F]
-                  ['max-abs  #\M]
+                  [1      #\1]
+                  ['inf   #\I]
+                  ['frob  #\F]
+                  ['max   #\M]
                   [_ (error)])))
   (define lwork (if (equal? norm-type 'inf) (max 1 m) 1))
   (define W (make-flomat lwork 1))
@@ -1304,8 +1304,8 @@
 (define (flomat-norm-frob A) ; Frobenius (sqrt of sum of squares)
   (flomat-norm A 'frob))
 
-(define (flomat-norm-max-abs A) ; not real norm
-  (flomat-norm A 'max-abs))
+(define (flomat-norm-max A) ; not real norm
+  (flomat-norm A 'max))
 
 
 ;;; 

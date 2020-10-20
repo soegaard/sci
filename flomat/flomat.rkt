@@ -95,10 +95,10 @@
                          [else                          'other]))
      ; The lib order is important here.
      (define cblas-lib    (case dist
-                            [(debian) (ffi-lib "libblas"     '("3" #f))]
-                            [(arch)   (ffi-lib "libcblas"    '("3" #f))]
-                            [(ubuntu) (ffi-lib "libcblas"    '("3" #f))] 
-                            [(other)  (ffi-lib "libcblas"    '("3" #f))]))
+                            [(debian) (ffi-lib "libblas"    '("3" #f))]
+                            [(arch)   (ffi-lib "libcblas"   '("3" #f))]
+                            [(ubuntu) (ffi-lib "libblas"    '("3" #f))] 
+                            [(other)  (ffi-lib "libblas"    '("3" #f))]))
                             
      (define gfortran-lib (ffi-lib "libgfortran" '("3" #f)))
      (define quadmath-lib (ffi-lib "libquadmath" '("0" #f)))

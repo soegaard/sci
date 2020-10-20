@@ -88,7 +88,7 @@
     ; UNIX
     [(unix)
      ; Note: The library names are different on Debian, Ubuntu and Arch.
-     (define uname (string-downcase (with-output-to-string (lambda () (system "uname -a")))))
+     (define uname (string-downcase (system-type 'machine)))
      (define dist  (cond [(regexp-match "arch"   uname) 'arch]
                          [(regexp-match "debian" uname) 'debian]
                          [(regexp-match "ubuntu" uname) 'ubuntu]

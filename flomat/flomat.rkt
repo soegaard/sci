@@ -87,8 +87,19 @@
      (values cblas-lib lapack-lib)]
     ; UNIX
     [(unix)
-     ; order is important here
-     (define cblas-lib    (ffi-lib "libblas"     '("3" #f))) 
+     ; Note: The library names are different on Debian, Ubuntu and Arch.
+     (define uname (string-downcase (with-output-to-string (lambda () (system "uname -a")))))
+     (define dist  (cond [(regexp-match "arch"   uname) 'arch]
+                         [(regexp-match "debian" uname) 'debian]
+                         [(regexp-match "ubuntu" uname) 'ubuntu]
+                         [else                          'other]))
+     ; The lib order is important here.
+     (define cblas-lib    (case dist
+                            [(debian) (ffi-lib "libblas"     '("3" #f))]
+                            [(arch)   (ffi-lib "libcblas"    '("3" #f))]
+                            [(ubuntu) (ffi-lib "libcblas"    '("3" #f))] 
+                            [(other)  (ffi-lib "libcblas"    '("3" #f))]))
+                            
      (define gfortran-lib (ffi-lib "libgfortran" '("3" #f)))
      (define quadmath-lib (ffi-lib "libquadmath" '("0" #f)))
      (define lapack-lib   (ffi-lib "liblapack"   '("3" #f)))

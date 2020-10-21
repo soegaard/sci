@@ -1288,7 +1288,7 @@
         (n    : (_ptr i _int))
         (a    : _flomat) 
         (lda  : (_ptr i _int))
-        (work : (_ptr io _flomat)) ; used only if norm is #\M
+        (work : _flomat)        ; used only if norm is #\M
         -> _double))
 
 (define (flomat-norm A [norm-type 'frob])

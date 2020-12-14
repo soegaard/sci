@@ -67,6 +67,7 @@
 
 ; Note: Use trailing _ in names exported by LAPACK (in order to work both on macOS and Linux).
 
+
 ;; Find placement of libraries.
 
 (define-values (cblas-lib lapack-lib)
@@ -109,9 +110,21 @@
      (define quadmath-lib (ffi-lib "libquadmath" '("0" #f)))
      (define lapack-lib   (ffi-lib "liblapack"   '("3" #f)))
      (values cblas-lib lapack-lib)]
-    [(windows)
-     ; tester needed
-     (error 'tester-needed)]))
+    [(windows) ; Windows 10
+     (define (use-openblas)
+       (define cblas-lib (ffi-lib "libopenblas.dll"))
+       (define lapack-lib #f)
+       (values cblas-lib lapack-lib))
+
+     ; If RACKET_SCI_USE_OPENBLAS is set, we don't look for the standard names.
+     (case (getenv "RACKET_SCI_USE_OPENBLAS")       
+       [(#f) (with-handlers ([exn:fail:filesystem?
+                              ; the standard names weren't found, try openblas
+                              (λ (x) (use-openblas))])
+               (define cblas-lib  (ffi-lib "libblas.dll"))   ; place them in PATH
+               (define lapack-lib (ffi-lib "liblapack.dll"))
+               (values cblas-lib lapack-lib))]
+       [else (use-openblas)])]))
 
 ;;; Load libraries
 

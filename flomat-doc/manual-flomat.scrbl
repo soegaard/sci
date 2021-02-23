@@ -476,7 +476,7 @@ To get a submatrix use @racket[sub] and @racket[sub!].
   Make a copy of the submatrix of @A with upper left corner in @${(i,j)} and with size mxn.
 
 @bold[@racket[(sub! A i j m n)]] @linebreak[]
-  Same as @racket[sub], but the elements are copied - the underlying 
+  Same as @racket[sub], but the elements are not copied - the underlying 
   array of flonums are shared.
 
 

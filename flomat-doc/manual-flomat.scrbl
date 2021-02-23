@@ -829,11 +829,12 @@ Compute the matrix exponential @${\exp(A)}.
 
 @section{Installation}
 
-The package @racket[flomat] is installed either in the terminal:
+The package @racket[flomat] is part of @racket[sci], so to install
+it, write this in a terminal:
 
-    @racket[raco pkg install flomat]
+    @racket[raco pkg install sci]
 
-or using the Package Manager in DrRacket.
+Alternatively, use the Package Manager in DrRacket.
 
 The package relies on the shared libraries CBLAS and LAPACK.
 Depending on your OS, you might need to install these yourself.

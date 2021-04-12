@@ -94,21 +94,31 @@
                          [(regexp-match "debian"      uname) 'debian]
                          [(regexp-match "ubuntu"      uname) 'ubuntu]
                          [(regexp-match #px"fc\\d\\d" uname) 'fedora]
+                         [(regexp-match #px"rp400"    uname) 'rp400]  ; raspberry pi
                          [else                               'other]))
-     ; The lib order is important here.
+     ; The lib order is important here. 
+     ; Since cblas depends on gfortran, gfortran needs to come first.
+     (define gfortran-lib (case dist
+                            [(rp400)  #f]
+                            [(fedora) (ffi-lib "libgfortran" '("5" #f))]
+                            [else     (ffi-lib "libgfortran" '("3" #f))]))
+
+     (define quadmath-lib (case dist
+                            [(rp400) #f]
+                            [else    (ffi-lib "libquadmath" '("0" #f))]))
+
      (define cblas-lib    (case dist
                             [(debian) (ffi-lib "libblas"  '("3" #f))]
                             [(arch)   (ffi-lib "libcblas" '("3" #f))]
                             [(ubuntu) (ffi-lib "libblas"  '("3" #f))] 
-                            [(fedora) (ffi-lib "libcblas" '("3" #f))] 
+                            [(fedora) (ffi-lib "libcblas" '("3" #f))]
+                            [(rp400)  (ffi-lib "libblas"  '("3" #f))]
                             [(other)  (ffi-lib "libblas"  '("3" #f))]))
                             
-     (define gfortran-lib (case dist
-                            [(fedora) (ffi-lib "libgfortran" '("5" #f))]
-                            [else     (ffi-lib "libgfortran" '("3" #f))]))
 
-     (define quadmath-lib (ffi-lib "libquadmath" '("0" #f)))
+
      (define lapack-lib   (ffi-lib "liblapack"   '("3" #f)))
+     
      (values cblas-lib lapack-lib)]
     [(windows) ; Windows 10
      (define (use-openblas)

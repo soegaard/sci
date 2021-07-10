@@ -14,7 +14,8 @@
 (define deps       '("base"
                      "flomat"))
 
-(define scribblings '(("manual-flomat.scrbl")))
+(define scribblings '(("manual-flomat.scrbl") () ("Math and Science")))
+
 (define build-deps '("math-doc"
                      "racket-doc"
                      "scribble-lib"

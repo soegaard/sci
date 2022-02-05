@@ -399,6 +399,10 @@
 (define (check-integer who x)
   (unless (integer? x) (raise-argument-error who "integer expected" x)))
 
+(define (check-positive-integer who x)
+  (unless (and (integer? x) (>= x 0))
+    (raise-argument-error who "positive integer epected" x)))
+
 
 
 ;;;
@@ -1318,6 +1322,8 @@
         (lda  : (_ptr i _int))
         (work : _flomat)        ; used only if norm is #\M
         -> _double))
+
+
 
 (define (flomat-norm A [norm-type 'frob])
   (define-param (m n a lda) A)
@@ -2758,6 +2764,93 @@
 
 (define (matrix-row-echelon A [jordan? #f] [unitize-pivot? #f] [pivoting 'partial])
   (matrix-row-echelon! (copy-flomat A) jordan? unitize-pivot? pivoting))
+
+;;;
+;;; RANDOM NUMBERS
+;;;
+
+; A seed is an integer array of dimension 4.
+; On entry the elements must be between 0 and 4095,
+; and the last element must be odd.
+; The routines update the seed automatically.
+
+(define _iseed (_cpointer 'flomat-iseed))
+
+(define (generate-iseed)
+  (define i* (cast (malloc 4 _int 'atomic)_pointer _iseed))
+  (define r0 (random 4096))
+  (define r1 (random 4096))
+  (define r2 (random 4096))
+  (define r3 (random 4096))
+  (let loop ()
+    (unless (odd? r3)
+      (set! r3 (random 4096))
+      (loop)))
+  (displayln (list r0 r1 r2 r3))
+  (ptr-set! i* _int 0 r0)
+  (ptr-set! i* _int 1 r1)
+  (ptr-set! i* _int 2 r2)
+  (ptr-set! i* _int 3 r3)
+  i*)
+
+(define the-iseed (generate-iseed))
+
+; DLARNV returns a vector of n random real numbers from a uniform or normal distribution.
+(define-lapack dlarnv_
+  (_fun (idist : (_ptr i _int)) ; i   1: uniform (0,1), 2: uniform (-1,1), 3: normal(0,1)
+        (iseed : _iseed)        ; io
+        (n    : (_ptr i _int))
+        (x    : _flomat)
+        -> _void))
+
+; DLARND returns a random real number from a uniform or normal distribution.
+; Not available on macOS (using the default lapack)
+#;(define-lapack dlarnd_
+  (_fun (idist : (_ptr i _int)) ; i   1: uniform (0,1), 2: uniform (-1,1), 3: normal(0,1)
+        (iseed : _iseed)        ; io
+        -> _double))
+
+
+; uniform numbers: (0,1)
+(define rand
+  ; 1: uniform (0,1)
+  (case-lambda
+    [()
+     (define a  (alloc-flomat 1 1))
+     (dlarnv_ 1 the-iseed 1 a)
+     (ptr-ref a _double 0)]
+    [(n)
+     (check-positive-integer 'rand n)
+     (define a  (alloc-flomat n n))
+     (dlarnv_ 1 the-iseed (* n n) a)
+     (flomat n n a n)]
+    [(m n)
+     (check-positive-integer 'rand m)
+     (check-positive-integer 'rand n)
+     (define a  (alloc-flomat m n))
+     (dlarnv_ 1 the-iseed (* m n) a)
+     (flomat m n a m)]))
+
+
+; standard normal distribution (0,1)
+(define randn
+  ; 1: normal distribution (0,1)
+  (case-lambda
+    [()
+     (define a  (alloc-flomat 1 1))
+     (dlarnv_ 3 the-iseed 1 a)
+     (ptr-ref a _double 0)]
+    [(n)
+     (check-positive-integer 'randn n)
+     (define a  (alloc-flomat n n))
+     (dlarnv_ 3 the-iseed (* n n) a)
+     (flomat n n a n)]
+    [(m n)
+     (check-positive-integer 'randn m)
+     (check-positive-integer 'randn n)
+     (define a  (alloc-flomat m n))
+     (dlarnv_ 3 the-iseed (* m n) a)
+     (flomat m n a m)]))
 
 
 ;;;

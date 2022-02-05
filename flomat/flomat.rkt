@@ -2786,7 +2786,6 @@
     (unless (odd? r3)
       (set! r3 (random 4096))
       (loop)))
-  (displayln (list r0 r1 r2 r3))
   (ptr-set! i* _int 0 r0)
   (ptr-set! i* _int 1 r1)
   (ptr-set! i* _int 2 r2)

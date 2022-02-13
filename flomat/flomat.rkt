@@ -2973,6 +2973,14 @@
 (define (sub A i j m n) (flsubmatrix A m n i j))
   ; return a the mxn submatrix of with upper  left corner in (i,j)
 
+(define (col! A j)
+  (define m (flomat-m A)) ; nrows
+  (sub! A 0 j m 1))
+
+(define (row! A i)
+  (define n (flomat-n A)) ; ncols
+  (sub! A i 0 1 n))
+
 
 ;;;
 ;;; Pointwise Operations

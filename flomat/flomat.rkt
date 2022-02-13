@@ -2974,10 +2974,12 @@
   ; return a the mxn submatrix of with upper  left corner in (i,j)
 
 (define (col! A j)
+  (check-legal-column 'col j A)
   (define m (flomat-m A)) ; nrows
   (sub! A 0 j m 1))
 
 (define (row! A i)
+  (check-legal-row 'row i A)
   (define n (flomat-n A)) ; ncols
   (sub! A i 0 1 n))
 

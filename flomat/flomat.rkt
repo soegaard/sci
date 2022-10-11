@@ -2950,7 +2950,7 @@
   (cond
     [(= lda 1) ; A is a row vector => no gaps
      (flomat m n a m)]
-    [(= lda m) ; no gap between each column
+    [(= lda M) ; no gap between each column
      (flomat m n a m)]
     ; [if ... M N m n ... has a nice relationship then ...]
     [else

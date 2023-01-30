@@ -90,17 +90,19 @@
     [(unix)
      ; Note: The library names are different on Debian, Ubuntu and Arch.
      (define uname (string-downcase (system-type 'machine)))
-     (define dist  (cond [(regexp-match "arch"        uname) 'arch]
-                         [(regexp-match "debian"      uname) 'debian]
-                         [(regexp-match "ubuntu"      uname) 'ubuntu]
-                         [(regexp-match #px"fc\\d\\d" uname) 'fedora]
-                         [(regexp-match #px"rp400"    uname) 'rp400]  ; raspberry pi
-                         [else                               'other]))
+     (define dist  (cond [(regexp-match "arch"           uname) 'arch]
+                         [(regexp-match "debian"         uname) 'debian]
+                         [(regexp-match "ubuntu"         uname) 'ubuntu]
+                         [(regexp-match #px"fc\\d\\d"    uname) 'fedora]
+                         [(regexp-match #px"raspberrypi" uname) 'rp400]  ; raspberry pi
+                         [(regexp-match #px"rp400"       uname) 'rp400]  ; raspberry pi
+                         [else                                  'other]))
      ; The lib order is important here. 
      ; Since cblas depends on gfortran, gfortran needs to come first.
      (define gfortran-lib (case dist
                             [(fedora) (ffi-lib "libgfortran" '("5" #f))]
-                            [(rp400)  (ffi-lib "libgfortran" '("5" #f))]                            
+                            [(rp400)  (ffi-lib "libgfortran" '("5" #f))]
+                            [(ubuntu) (ffi-lib "libgfortran" '("5" #f))]
                             [else     (ffi-lib "libgfortran" '("3" #f))]))
 
      (define quadmath-lib (case dist

@@ -102,7 +102,7 @@
      (define gfortran-lib (case dist
                             [(fedora) (ffi-lib "libgfortran" '("5" #f))]
                             [(rp400)  (ffi-lib "libgfortran" '("5" #f))]
-                            [(ubuntu) (ffi-lib "libgfortran" '("5" #f))]
+                            [(ubuntu) (ffi-lib "libgfortran" '("5" "3" #f))]
                             [else     (ffi-lib "libgfortran" '("3" #f))]))
 
      (define quadmath-lib (case dist

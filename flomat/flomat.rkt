@@ -99,12 +99,7 @@
                          [else                                  'other]))
      ; The lib order is important here. 
      ; Since cblas depends on gfortran, gfortran needs to come first.
-     (define gfortran-lib (case dist
-                            [(fedora) (ffi-lib "libgfortran" '("5" #f))]
-                            [(rp400)  (ffi-lib "libgfortran" '("5" #f))]
-                            [(ubuntu) (ffi-lib "libgfortran" '("5" "3" #f))]
-                            [(debian) (ffi-lib "libgfortran" '("5" "3" #f))]
-                            [else     (ffi-lib "libgfortran" '("3" #f))]))
+     (define gfortran-lib (ffi-lib "libgfortran" '("5" "3" #f)))
 
      (define quadmath-lib (case dist
                             [(rp400) #f]

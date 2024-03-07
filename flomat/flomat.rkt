@@ -766,8 +766,10 @@
         (Y : _flomat) (incY : _int)
         -> _void))
 
-(define (unsafe-vector-clear n a [lda 1])
-  (cblas_daxpy n -1.0 a lda a lda))
+;; This does not work if there are NaN entries.
+;; Use memset with 0 instead. See block-diagonal as an example.
+;; (define (unsafe-vector-clear n a [lda 1])
+;;   (cblas_daxpy n -1.0 a lda a lda))
 
 ; TODO: Allow adding row to different matrix!
 
@@ -1273,7 +1275,7 @@
   (define n (apply + cols))
   (define a (alloc-flomat m n))
   (define lda m)
-  (unsafe-vector-clear (* m n) a)
+  (memset a 0 0 (* m n) _double)
   ; 3. Fill in blocks
   (define i 0)
   (define j 0) 

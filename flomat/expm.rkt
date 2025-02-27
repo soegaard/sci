@@ -7,7 +7,7 @@
 
 ; This module implements `expm` the so-called matrix exponential.
 ; The standard exponential function `exp` can be written as
-; as an infinite sum (the Taylor series of exp).
+; an infinite sum (the Taylor series of exp).
 
 ;                x    x^2   x^3
 ;   exp(x) = 1 + -- + --- + --- + ...
@@ -72,7 +72,7 @@
 ;          (2p)! i! (p-i)!
 
 ; Given these formulas we can compute the coefficients we need,
-; when we can experiment with different number of terms.
+; then we can experiment with different number of terms.
 
 ; This is fine - but what about our matrices?
 ; As a simple example, let's say we have chosen to use the approximation:
@@ -93,15 +93,15 @@
 
 ; This basic idea is the back bone of the computation.
 
-; There is a little observation that we can use to reduce
-; amount of compuation in the denominator. The terms of the
+; There is a little observation that we can use to reduce the
+; amount of computation in the denominator. The terms of the
 ; numerator and denominator are the same - except for different
 ; signs in the terms with odd degree. This suggests that we
 ; should calculate the even and odd terms of the numerator first:
 
 ;    numerator  = sum_of_even + sum_of_odd
 
-; then the the denominator is a sumple sum:
+; then the denominator is a simple to compute:
 
 ;    denominator = sum_of_even - sum_of_odd
 
@@ -176,7 +176,7 @@
                          (times A (loop (rest cs))))]))
   (loop cs))
 
-; We can directly expm as below, because we want to compute the
+; We can directly compute expm as below, because we want to compute the
 ; the even and odd terms separately.
 
 (define (expm-pade0 A)
@@ -188,7 +188,7 @@
 (define (odd-coefs cs)
   (if (empty? cs) '() (even-coefs (rest cs))))
 
-; Now we without scaling, we have:
+; Now without scaling, we have:
 
 (define (expm-pade/no-scaling A)
   (define AA   (times A A))
@@ -207,7 +207,7 @@
   (repeated-squaring (expm-pade/no-scaling A/2^s) s))
 
 (define (repeated-squaring A s)
-  (if (= s 0) A (repeated-squaring (times A A) (- s 1))))
+  (if (<= s 0) A (repeated-squaring (times A A) (- s 1))))
 
 (define (find-scaling-exponent A)
   (define N (norm A 1))

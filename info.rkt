@@ -24,4 +24,5 @@
                      "scribble-math"
                      "math-doc"
                      "racket-doc"
-                     ("linux-shared-libraries"  #:platform "x86_64-linux-natipkg")))
+                     ("linux-shared-libraries" #:platform "x86_64-linux-natipkg")
+                     ("linux-shared-libraries" #:platform "aarch64-linux-natipkg")))

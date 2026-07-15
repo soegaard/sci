@@ -90,12 +90,18 @@
     [(unix)
      ; Note: The library names are different on Debian, Ubuntu and Arch.
      (define uname (string-downcase (system-type 'machine)))
+     (define os-release
+       (if (file-exists? "/etc/os-release")
+           (with-input-from-file "/etc/os-release"
+             (lambda () (string-downcase (read-line))))
+           #f))
      (define dist  (cond [(regexp-match "arch"           uname) 'arch]
                          [(regexp-match "debian"         uname) 'debian]
                          [(regexp-match "ubuntu"         uname) 'ubuntu]
                          [(regexp-match #px"fc\\d\\d"    uname) 'fedora]
                          [(regexp-match #px"raspberrypi" uname) 'rp400]  ; raspberry pi
                          [(regexp-match #px"rp400"       uname) 'rp400]  ; raspberry pi
+                         [(regexp-match "guix"      os-release) 'guix]
                          [else                                  'other]))
      ; The lib order is important here. 
      ; Since cblas depends on gfortran, gfortran needs to come first.
@@ -111,6 +117,7 @@
                             [(ubuntu) (ffi-lib "libblas"  '("3" #f))] 
                             [(fedora) (ffi-lib "libcblas" '("3" #f))]
                             [(rp400)  (ffi-lib "libblas"  '("3" #f))]
+                            [(guix)   (ffi-lib "libcblas" '("3" #f))]
                             [(other)  (ffi-lib "libblas"  '("3" #f))]))
                             
 
